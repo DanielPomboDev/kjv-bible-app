@@ -1,9 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import { initSettings } from "./store/settings";
 
-// Default to the light theme until the settings/theme-toggle feature exists.
-document.documentElement.dataset.theme = "light";
+// Load persisted settings (theme + reading size) before the first render
+// so the app never flashes the wrong theme.
+initSettings();
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

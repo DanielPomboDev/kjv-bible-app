@@ -1,9 +1,11 @@
 import { useNavigation } from "../store/navigation";
 import { useSearch } from "../store/search";
+import { SettingsPanel } from "./SettingsPanel";
 
 /**
  * Top bar: the current chapter read-out, the search field that opens the
- * overlay (also reachable via Ctrl/Cmd+K), and the light/dark theme toggle.
+ * overlay (also reachable via Ctrl/Cmd+K), and the settings panel —
+ * which holds the light/dark theme toggle and reading font size control.
  * Everything is reachable by keyboard.
  */
 export function TopBar() {
@@ -29,17 +31,7 @@ export function TopBar() {
         <span className="top-bar-search-placeholder">Search…</span>
         <kbd className="top-bar-search-kbd">Ctrl+K</kbd>
       </button>
-      <button
-        type="button"
-        className="top-bar-theme"
-        aria-label="Toggle dark mode"
-        onClick={() => {
-          const root = document.documentElement;
-          root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
-        }}
-      >
-        ◐
-      </button>
+      <SettingsPanel />
     </header>
   );
 }

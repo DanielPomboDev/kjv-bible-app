@@ -49,6 +49,10 @@ disappears when nothing is selected.
 - UI text: system font (`-apple-system, "Segoe UI", sans-serif`)
 - Bible reading text: serif (`"Source Serif 4", Georgia, serif`), line-height 1.7
 - Body text size: 1.0625rem, user-adjustable
+- Reading text size (`--text-reading-size`): user-adjustable via the
+  Settings panel in four steps — 0.9375rem, 1.0625rem (default), 1.25rem,
+  1.5rem — applied as an inline override on `:root`; persists across
+  restarts. UI chrome always uses the standard body size.
 - Verse numbers: smaller (0.75rem), `--text-secondary` color
 
 ## Spacing scale
@@ -69,11 +73,11 @@ new numbers.
 - Double-click a verse → copy it immediately.
 - Ctrl/Cmd+click → add/remove from selection.
 - Shift+click → select a range.
+- Settings (gear in the TopBar): light/dark theme and reading font size;
+  both apply immediately and persist across restarts.
 - "Copy Selected" / "Clear Selection" buttons appear in the toolbar when
   selection is non-empty.
 
-## Core components
-
-AppShell, TopBar (search + theme toggle), BookList, ChapterGrid, Verse,
-CopyToolbar, SearchOverlay, SearchResults, SettingsPanel, Toast (for "Copied
-3 verses" feedback).
+## Core componentsAppShell, TopBar (search + settings), BookList, ChapterGrid, Verse,
+CopyToolbar, SearchOverlay, SearchResults, SettingsPanel, Toast (for
+"Copied 3 verses" feedback).

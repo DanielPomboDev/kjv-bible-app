@@ -3,7 +3,7 @@
 .reading-pane {
   padding: var(--space-6) var(--space-4);
   font-family: var(--font-reading);
-  font-size: var(--text-body-size);
+  font-size: var(--text-reading-size);
   line-height: 1.7;
   color: var(--text-primary);
 }
