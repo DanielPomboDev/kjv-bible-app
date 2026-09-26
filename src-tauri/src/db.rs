@@ -1,6 +1,8 @@
 use rusqlite::{params, Connection};
 use serde::Serialize;
 
+pub use book_lookup::{book_id_by_name, book_name};
+
 /// Location of the generated database, relative to the src-tauri crate.
 /// The bundler does not include `data/`, so in a packaged build this file
 /// does not exist and `open()` fails with a clear error instead of
@@ -37,7 +39,7 @@ pub struct Book {
     pub chapter_count: i32,
 }
 
-fn open() -> Result<Connection, String> {
+pub fn open() -> Result<Connection, String> {
     let path = std::env::current_dir()
         .map_err(|e| format!("cannot determine working directory: {e}"))?
         .join(DB_RELATIVE_PATH);
@@ -137,6 +139,52 @@ pub fn get_books() -> Result<Vec<Book>, String> {
         .map_err(|e| format!("failed to read books: {e}"))?;
 
     Ok(books)
+}
+
+/// Book-name lookups shared by db.rs and search.rs.
+mod book_lookup {
+    use rusqlite::Connection;
+
+    /// Resolve a user-typed book name ("1 Corinthians") to its id, matched
+    /// case-insensitively against the canonical name. Any SQL LIKE wildcards
+    /// in the user text are escaped, so only `%`/`_` as literals match.
+    pub fn book_id_by_name(conn: &Connection, name: &str) -> Result<Option<i64>, String> {
+        let pattern = format!("{}%", escape_like(name));
+        let mut stmt = conn
+            .prepare("SELECT id FROM books WHERE name LIKE ?1 ESCAPE '\\' ORDER BY book_order")
+            .map_err(|e| format!("failed to prepare book lookup: {e}"))?;
+        let mut rows = stmt
+            .query(rusqlite::params![pattern])
+            .map_err(|e| format!("failed to look up book {name:?}: {e}"))?;
+        match rows.next() {
+            Ok(Some(row)) => {
+                let id = row.get(0).map_err(|e| format!("bad book row: {e}"))?;
+                Ok(Some(id))
+            }
+            Ok(None) => Ok(None),
+            Err(e) => Err(format!("failed to look up book {name:?}: {e}")),
+        }
+    }
+
+    /// Canonical name for a book id (e.g. 43 → "John").
+    pub fn book_name(conn: &Connection, book_id: i64) -> Result<String, String> {
+        conn.query_row(
+            "SELECT name FROM books WHERE id = ?1",
+            rusqlite::params![book_id],
+            |row| row.get(0),
+        )
+        .map_err(|e| match e {
+            rusqlite::Error::QueryReturnedNoRows => format!("unknown book id {book_id}"),
+            other => format!("failed to look up book id {book_id}: {other}"),
+        })
+    }
+
+    /// Escape LIKE wildcards so user text matches itself only.
+    fn escape_like(text: &str) -> String {
+        text.replace('\\', "\\\\")
+            .replace('%', "\\%")
+            .replace('_', "\\_")
+    }
 }
 
 // The dev server runs src-tauri as its working directory, so tests can read

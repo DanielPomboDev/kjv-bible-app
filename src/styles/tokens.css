@@ -12,6 +12,7 @@
   --accent: #8A5A2B;
   --selection: #F0E2C8;
   --focus-ring: #4A7FBF;
+  --scrim: rgb(0 0 0 / 0.45);
 }
 
 :root[data-theme="dark"] {
@@ -23,6 +24,7 @@
   --accent: #D9A25C;
   --selection: #4A3B22;
   --focus-ring: #6EA0E8;
+  --scrim: rgb(0 0 0 / 0.6);
 }
 
 :root {

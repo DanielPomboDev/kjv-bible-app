@@ -3,15 +3,20 @@ import { getChapter } from "./services/bible";
 import type { Chapter } from "./domain/types";
 import { Verse } from "./components/Verse";
 import { BookList } from "./components/BookList";
+import { TopBar } from "./components/TopBar";
+import { SearchOverlay } from "./components/SearchOverlay";
 import { useNavigation } from "./store/navigation";
+import { useSearch } from "./store/search";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/verse.css";
 import "./styles/navigation.css";
+import "./styles/search.css";
 
 function App() {
   const bookId = useNavigation((s) => s.bookId);
   const chapter = useNavigation((s) => s.chapter);
+  const openSearch = useSearch((s) => s.openSearch);
   const [loaded, setLoaded] = useState<Chapter | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,10 +37,23 @@ function App() {
     };
   }, [bookId, chapter]);
 
+  // Ctrl/Cmd+K opens the search overlay from anywhere.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+        e.preventDefault();
+        openSearch();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [openSearch]);
+
   return (
     <div className="app-shell">
       <BookList />
       <main className="reading-pane">
+        <TopBar />
         {error ? (
           `Failed to load: ${error}`
         ) : !loaded ? (
@@ -53,6 +71,7 @@ function App() {
           </>
         )}
       </main>
+      <SearchOverlay />
     </div>
   );
 }
