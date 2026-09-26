@@ -28,6 +28,9 @@ export function TopBar() {
         onClick={openSearch}
         aria-haspopup="dialog"
       >
+        <span className="top-bar-search-icon" aria-hidden="true">
+          🔍
+        </span>
         <span className="top-bar-search-placeholder">Search…</span>
         <kbd className="top-bar-search-kbd">Ctrl+K</kbd>
       </button>

@@ -6,13 +6,16 @@ If a value isn't listed, add it here first, then use it.
 ## Layout
 
 Two panes: a collapsible book/chapter list on the left, the reading pane on
-the right. Search opens as an overlay (not a separate page): a dimmed scrim
-over the whole window with a centered panel — input on top, results in a
-scrollable list below. Clicking a result opens that chapter in the reader.
-Keyboard: Ctrl/Cmd+K opens search, Escape closes it, ↑/↓ moves the
-selection, Enter opens the selected result. A copy toolbar
-slides up from the bottom only when one or more verses are selected, and
-disappears when nothing is selected.
+the right. The TopBar is a full-width bar fixed at the top of the reading
+pane (it does not scroll away); the chapter text scrolls under it in a
+centered column (max width ~42rem) for comfortable reading. Search opens as
+an overlay (not a separate page): a dimmed scrim over the whole window with
+a centered panel — input on top, results in a scrollable list below.
+Clicking a result opens that chapter in the reader. Keyboard: Ctrl/Cmd+K
+opens search, Escape closes it, ↑/↓ moves the selection, Enter opens the
+selected result. A copy toolbar floats above the bottom center of the
+window only when one or more verses are selected, and disappears when
+nothing is selected.
 
 ## Colors (CSS variables)
 
@@ -28,6 +31,9 @@ disappears when nothing is selected.
   --hover: #F7F0E3;             /* faint hover tint */
   --focus-ring: #4A7FBF;
   --scrim: rgb(0 0 0 / 0.45);   /* overlay backdrop */
+
+  --accent-soft: #F3E7D3;       /* 12% accent over surface: icon/active tints */
+  --accent-contrast: #FFFFFF;   /* text on --accent fills */
 }
 
 :root[data-theme="dark"] {
@@ -41,6 +47,9 @@ disappears when nothing is selected.
   --hover: #2F281B;             /* faint hover tint */
   --focus-ring: #6EA0E8;
   --scrim: rgb(0 0 0 / 0.6);    /* overlay backdrop */
+
+  --accent-soft: #3B2E1C;       /* 12% accent over surface: icon/active tints */
+  --accent-contrast: #241A0C;   /* text on --accent fills */
 }
 ```
 
@@ -53,12 +62,51 @@ disappears when nothing is selected.
   Settings panel in four steps — 0.9375rem, 1.0625rem (default), 1.25rem,
   1.5rem — applied as an inline override on `:root`; persists across
   restarts. UI chrome always uses the standard body size.
+- Chapter heading size (`--text-heading-size`): 1.5rem, used for the
+  "John 3" heading in the reading pane only.
+- Small sizes: verse numbers and secondary labels 0.75rem; keyboard
+  chips (`Ctrl+K`, `Esc`) 0.6875rem.
 - Verse numbers: smaller (0.75rem), `--text-secondary` color
+- Section labels (testament headers): 0.75rem, weight 600, uppercase,
+  0.05em letter-spacing, `--text-secondary` color
 
 ## Spacing scale
 
 `4px, 8px, 12px, 16px, 24px, 32px, 48px` — pick from this list, don't invent
 new numbers.
+
+## Radii scale
+
+`4px` (small controls), `8px` (buttons, inputs, cards), `12px` (large
+surfaces: search panel, popovers, floating toolbar).
+
+## Shadows
+
+Used for elevation on floating surfaces (search panel, popovers, copy
+toolbar, toast). Never used on static, in-flow surfaces.
+
+```css
+--shadow-1: 0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.08);
+--shadow-2: 0 2px 6px rgb(0 0 0 / 0.08), 0 8px 24px rgb(0 0 0 / 0.14);
+--shadow-3: 0 4px 12px rgb(0 0 0 / 0.12), 0 16px 40px rgb(0 0 0 / 0.2);
+--shadow-toolbar: 0 4px 16px rgb(0 0 0 / 0.18), 0 12px 32px rgb(0 0 0 / 0.22);
+```
+
+- `--shadow-1`: the fixed TopBar hairline shadow.
+- `--shadow-2`: popovers, the copy toolbar, the toast.
+- `--shadow-3`: the search overlay panel (highest layer).
+
+## Motion
+
+```
+--motion-fast: 120ms;
+--motion-base: 180ms;
+--ease-out: cubic-bezier(0.2, 0.7, 0.3, 1);
+```
+
+Hover/focus/color transitions use `--motion-fast`; entrances (overlay
+panel, toolbar, toast) use `--motion-base` with `--ease-out`. Honor
+`prefers-reduced-motion` (animations degrade to instant).
 
 ## Verse selection states
 
@@ -77,6 +125,8 @@ new numbers.
   both apply immediately and persist across restarts.
 - "Copy Selected" / "Clear Selection" buttons appear in the toolbar when
   selection is non-empty.
+- Hover states: interactive rows and buttons get the `--hover` tint or an
+  `--accent` border/text shift, transitioning on `--motion-fast`.
 
 ## Core componentsAppShell, TopBar (search + settings), BookList, ChapterGrid, Verse,
 CopyToolbar, SearchOverlay, SearchResults, SettingsPanel, Toast (for

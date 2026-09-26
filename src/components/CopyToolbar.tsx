@@ -5,10 +5,11 @@ import { useSelection } from "../store/selection";
 import { useToast } from "../store/toast";
 
 /**
- * Toolbar that slides up from the bottom only while one or more verses
- * are selected (DESIGN-SYSTEM.md). "Copy Selected" copies every selected
- * verse in book/chapter/verse order, blank line between verses; "Clear
- * Selection" empties the selection.
+ * Floating pill that appears above the bottom center of the window only
+ * while one or more verses are selected (DESIGN-SYSTEM.md). "Copy
+ * Selected" is the primary action and copies every selected verse in
+ * book/chapter/verse order, blank line between verses; "Clear" is the
+ * quiet secondary action and empties the selection.
  */
 export function CopyToolbar() {
   const count = useSelection((s) => s.selectedIds.size);
@@ -37,25 +38,28 @@ export function CopyToolbar() {
 
   return (
     <div className="copy-toolbar" role="toolbar" aria-label="Selection actions">
-      <span className="copy-toolbar-count">
+      <span className="copy-toolbar-count" aria-live="polite">
         {count} verse{count === 1 ? "" : "s"} selected
       </span>
-      <button
-        type="button"
-        className="copy-toolbar-button"
-        onClick={copySelected}
-        disabled={busy}
-      >
-        Copy Selected
-      </button>
-      <button
-        type="button"
-        className="copy-toolbar-button"
-        onClick={clear}
-        disabled={busy}
-      >
-        Clear Selection
-      </button>
+      <span className="copy-toolbar-divider" aria-hidden="true" />
+      <div className="copy-toolbar-actions">
+        <button
+          type="button"
+          className="copy-toolbar-button copy-toolbar-button-primary"
+          onClick={copySelected}
+          disabled={busy}
+        >
+          Copy Selected
+        </button>
+        <button
+          type="button"
+          className="copy-toolbar-button copy-toolbar-button-ghost"
+          onClick={clear}
+          disabled={busy}
+        >
+          Clear
+        </button>
+      </div>
     </div>
   );
 }

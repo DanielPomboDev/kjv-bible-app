@@ -1,4 +1,4 @@
-/* Left pane: BookList + ChapterGrid — tokens only, no new values. */
+/* Left pane: BookList + ChapterGrid — uses only tokens from tokens.css. */
 
 .app-shell {
   display: flex;
@@ -13,7 +13,7 @@
   overflow-y: auto;
   background: var(--surface);
   border-right: 1px solid var(--border);
-  padding: var(--space-2) 0;
+  padding: var(--space-2) 0 var(--space-4);
   font-family: var(--font-ui);
 }
 
@@ -21,27 +21,32 @@
   margin-top: var(--space-4);
 }
 
+/* Testament headers read as tiny section labels, not big buttons. */
 .testament-header {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
   width: 100%;
   padding: var(--space-2) var(--space-4);
   background: none;
   border: none;
   font-family: var(--font-ui);
-  font-size: var(--text-body-size);
+  font-size: var(--text-verse-number-size);
   font-weight: 600;
-  color: var(--text-primary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
   text-align: left;
   cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition:
+    color var(--motion-fast) var(--ease-out),
+    background-color var(--motion-fast) var(--ease-out);
 }
 
-.testament-header:focus-visible,
-.book-name:focus-visible,
-.chapter-button:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: -2px;
+.testament-header:hover {
+  color: var(--text-primary);
+  background: var(--hover);
 }
 
 .testament-chevron {
@@ -61,45 +66,81 @@
   padding: var(--space-1) var(--space-4) var(--space-1) var(--space-8);
   background: none;
   border: none;
+  border-radius: var(--radius-sm);
   font-family: var(--font-ui);
   font-size: var(--text-body-size);
   color: var(--text-primary);
   text-align: left;
   cursor: pointer;
+  transition: background-color var(--motion-fast) var(--ease-out);
 }
 
 .book-name:hover {
+  background: var(--hover);
+}
+
+.book-name:active {
   background: var(--selection);
 }
 
-/* --- ChapterGrid --- */
+/* The book whose chapters are expanded, or whose chapter is open in the
+   reading pane, carries a quiet accent flag. */
+.book-name[aria-expanded="true"] {
+  color: var(--accent);
+  font-weight: 600;
+  background: var(--accent-soft);
+}
+
+/* Chapter grid sits in a soft inset well so it reads as "inside" the
+   selected book rather than as sibling rows. */
+.chapter-grid-section {
+  margin: var(--space-1) var(--space-3) var(--space-2) var(--space-8);
+  padding: var(--space-2);
+  background: var(--background);
+  border-radius: var(--radius-md);
+}
 
 .chapter-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
   gap: var(--space-1);
-  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-8);
 }
 
 .chapter-button {
   min-width: 32px;
   min-height: 32px;
-  background: var(--background);
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   font-family: var(--font-ui);
   font-size: var(--text-verse-number-size);
   color: var(--text-primary);
   cursor: pointer;
+  transition:
+    background-color var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast) var(--ease-out),
+    color var(--motion-fast) var(--ease-out);
 }
 
 .chapter-button:hover {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.chapter-button:active {
   background: var(--selection);
 }
 
 .chapter-button[aria-current="true"] {
-  background: var(--selection);
+  background: var(--accent);
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-contrast);
   font-weight: 600;
+}
+
+.testament-header:focus-visible,
+.book-name:focus-visible,
+.chapter-button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
 }

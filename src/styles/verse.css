@@ -1,28 +1,64 @@
 /* Reading pane + Verse — uses only tokens from tokens.css */
 
+/* The top bar is fixed; the chapter text scrolls in a centered column
+   underneath it (see Layout in DESIGN-SYSTEM.md). */
+
 .reading-pane {
-  padding: var(--space-6) var(--space-4);
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   font-family: var(--font-reading);
   font-size: var(--text-reading-size);
   line-height: 1.7;
   color: var(--text-primary);
 }
 
+.chapter-scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.chapter-body {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) var(--space-12);
+}
+
 .chapter-heading {
   font-family: var(--font-ui);
-  font-size: var(--text-body-size);
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin: 0 0 var(--space-4) 0;
+  font-size: var(--text-heading-size);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  margin: 0 0 var(--space-6) 0;
+}
+
+/* A quiet accent rule under the heading ties the reading column to the
+   accent used for selection and the current chapter chip. */
+.chapter-heading::after {
+  content: "";
+  display: block;
+  width: var(--space-8);
+  height: 2px;
+  margin-top: var(--space-3);
+  background: var(--accent);
+  border-radius: 1px;
+  opacity: 0.4;
 }
 
 /* Verses read as printed Bibles: each verse is its own block — verse
    number, text, then a break before the next. Hover/selection styles
-   below are unchanged from DESIGN-SYSTEM.md. */
+   follow DESIGN-SYSTEM.md's selection states, with soft rounded tints. */
 .verse {
   display: block;
   margin-bottom: var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  margin-left: calc(-1 * var(--space-2));
+  margin-right: calc(-1 * var(--space-2));
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  transition: background-color var(--motion-fast) var(--ease-out);
 }
 
 .verse:hover:not(.verse-selected) {
@@ -37,7 +73,13 @@
 .verse-number {
   font-family: var(--font-ui);
   font-size: var(--text-verse-number-size);
+  font-weight: 600;
   color: var(--text-secondary);
   margin-right: var(--space-1);
   user-select: none;
+}
+
+/* Verse numbers get an accent tint on hover so rows feel interactive. */
+.verse:hover:not(.verse-selected) .verse-number {
+  color: var(--accent);
 }

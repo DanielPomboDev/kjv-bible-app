@@ -2,28 +2,30 @@
  * Copy toolbar + Toast — uses only tokens from tokens.css.
  */
 
+/* Floating pill above the bottom center — the selected-verses actions. */
 .copy-toolbar {
   position: fixed;
   left: 50%;
-  bottom: 0;
+  bottom: var(--space-6);
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-bottom: none;
-  border-radius: 4px 4px 0 0;
-  box-shadow: 0 -4px 16px var(--scrim);
-  animation: copy-toolbar-rise 160ms ease-out;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-toolbar);
+  animation: copy-toolbar-rise var(--motion-base) var(--ease-out);
 }
 
 @keyframes copy-toolbar-rise {
   from {
-    transform: translate(-50%, 100%);
+    opacity: 0;
+    transform: translate(-50%, var(--space-2));
   }
   to {
+    opacity: 1;
     transform: translate(-50%, 0);
   }
 }
@@ -31,23 +33,55 @@
 .copy-toolbar-count {
   font-family: var(--font-ui);
   font-size: var(--text-verse-number-size);
+  font-weight: 600;
   color: var(--text-secondary);
 }
 
-.copy-toolbar-button {
-  padding: var(--space-1) var(--space-2);
-  background: var(--background);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  font-family: var(--font-ui);
-  font-size: var(--text-verse-number-size);
-  color: var(--text-primary);
-  cursor: pointer;
+.copy-toolbar-divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border);
 }
 
-.copy-toolbar-button:hover:not(:disabled) {
-  border-color: var(--accent);
+.copy-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.copy-toolbar-button {
+  padding: var(--space-1) var(--space-3);
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) var(--ease-out),
+    color var(--motion-fast) var(--ease-out),
+    opacity var(--motion-fast) var(--ease-out);
+}
+
+.copy-toolbar-button-primary {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.copy-toolbar-button-primary:hover:not(:disabled) {
+  background: var(--accent-soft);
   color: var(--accent);
+}
+
+.copy-toolbar-button-ghost {
+  color: var(--text-secondary);
+}
+
+.copy-toolbar-button-ghost:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: var(--hover);
 }
 
 .copy-toolbar-button:disabled {
@@ -64,15 +98,27 @@
 .toast {
   position: fixed;
   left: 50%;
-  bottom: var(--space-8);
+  bottom: var(--space-12);
   transform: translateX(-50%);
   padding: var(--space-2) var(--space-4);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  box-shadow: 0 4px 16px var(--scrim);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
   font-family: var(--font-ui);
   font-size: var(--text-verse-number-size);
   color: var(--text-primary);
   z-index: 200;
+  animation: toast-rise var(--motion-base) var(--ease-out);
+}
+
+@keyframes toast-rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, var(--space-2));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
