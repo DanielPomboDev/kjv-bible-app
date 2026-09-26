@@ -1,5 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Chapter } from "../domain/types";
+import type { Book, Chapter } from "../domain/types";
+
+/**
+ * All 66 books in canonical order, each with its chapter count.
+ */
+export function getBooks(): Promise<Book[]> {
+  return invoke<Book[]>("get_books");
+}
 
 /**
  * Fetch all verses for one book+chapter, in verse order.

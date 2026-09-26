@@ -1,0 +1,105 @@
+/* Left pane: BookList + ChapterGrid — tokens only, no new values. */
+
+.app-shell {
+  display: flex;
+  height: 100vh;
+}
+
+/* --- BookList --- */
+
+.book-list {
+  width: 240px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: var(--space-2) 0;
+  font-family: var(--font-ui);
+}
+
+.book-section + .book-section {
+  margin-top: var(--space-4);
+}
+
+.testament-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-4);
+  background: none;
+  border: none;
+  font-family: var(--font-ui);
+  font-size: var(--text-body-size);
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.testament-header:focus-visible,
+.book-name:focus-visible,
+.chapter-button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.testament-chevron {
+  font-size: var(--text-verse-number-size);
+  color: var(--text-secondary);
+}
+
+.book-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.book-name {
+  display: block;
+  width: 100%;
+  padding: var(--space-1) var(--space-4) var(--space-1) var(--space-8);
+  background: none;
+  border: none;
+  font-family: var(--font-ui);
+  font-size: var(--text-body-size);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.book-name:hover {
+  background: var(--selection);
+}
+
+/* --- ChapterGrid --- */
+
+.chapter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-8);
+}
+
+.chapter-button {
+  min-width: 32px;
+  min-height: 32px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.chapter-button:hover {
+  background: var(--selection);
+}
+
+.chapter-button[aria-current="true"] {
+  background: var(--selection);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
