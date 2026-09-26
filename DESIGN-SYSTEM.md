@@ -6,7 +6,11 @@ If a value isn't listed, add it here first, then use it.
 ## Layout
 
 Two panes: a collapsible book/chapter list on the left, the reading pane on
-the right. Search opens as an overlay (not a separate page). A copy toolbar
+the right. Search opens as an overlay (not a separate page): a dimmed scrim
+over the whole window with a centered panel — input on top, results in a
+scrollable list below. Clicking a result opens that chapter in the reader.
+Keyboard: Ctrl/Cmd+K opens search, Escape closes it, ↑/↓ moves the
+selection, Enter opens the selected result. A copy toolbar
 slides up from the bottom only when one or more verses are selected, and
 disappears when nothing is selected.
 
@@ -22,6 +26,7 @@ disappears when nothing is selected.
   --accent: #8A5A2B;
   --selection: #F0E2C8;
   --focus-ring: #4A7FBF;
+  --scrim: rgb(0 0 0 / 0.45);   /* overlay backdrop */
 }
 
 :root[data-theme="dark"] {
@@ -33,6 +38,7 @@ disappears when nothing is selected.
   --accent: #D9A25C;
   --selection: #4A3B22;
   --focus-ring: #6EA0E8;
+  --scrim: rgb(0 0 0 / 0.6);    /* overlay backdrop */
 }
 ```
 

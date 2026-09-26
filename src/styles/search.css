@@ -1,0 +1,181 @@
+/*
+ * Search overlay + TopBar — uses only tokens from tokens.css.
+ */
+
+/* --- TopBar --- */
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.top-bar-location {
+  background: none;
+  border: none;
+  padding: var(--space-1) 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-body-size);
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+.top-bar-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  max-width: 360px;
+  margin-left: auto;
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.top-bar-search:hover {
+  border-color: var(--accent);
+}
+
+.top-bar-search-placeholder {
+  flex: 1;
+  text-align: left;
+}
+
+.top-bar-search-kbd {
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-secondary);
+}
+
+.top-bar-theme {
+  background: none;
+  border: none;
+  padding: var(--space-1);
+  font-size: var(--text-body-size);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.top-bar-location:focus-visible,
+.top-bar-search:focus-visible,
+.top-bar-theme:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+/* --- Search overlay --- */
+
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.search-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+}
+
+.search-panel {
+  position: relative;
+  z-index: 1;
+  width: min(560px, calc(100vw - 2 * var(--space-6)));
+  max-height: calc(100vh - 2 * var(--space-12));
+  margin-top: var(--space-12);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px var(--scrim);
+  overflow: hidden;
+}
+
+.search-input {
+  padding: var(--space-3) var(--space-4);
+  background: var(--background);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-ui);
+  font-size: var(--text-body-size);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.search-status,
+.search-hints {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-secondary);
+}
+
+.search-hints code {
+  color: var(--text-primary);
+}
+
+/* --- Results --- */
+
+.search-results {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-1) 0;
+  overflow-y: auto;
+}
+
+.search-hit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+}
+
+.search-hit:hover,
+.search-hit[data-selected="true"] {
+  background: var(--selection);
+}
+
+.search-hit[data-selected="true"] {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.search-hit:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.search-hit-ref {
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-secondary);
+}
+
+.search-hit-kind {
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--accent);
+}
+
+.search-hit-text {
+  font-family: var(--font-reading);
+  font-size: var(--text-body-size);
+  color: var(--text-primary);
+  line-height: 1.7;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}

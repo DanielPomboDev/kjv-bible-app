@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Book, Chapter } from "../domain/types";
+import type { Book, Chapter, SearchResult } from "../domain/types";
 
 /**
  * All 66 books in canonical order, each with its chapter count.
@@ -14,4 +14,13 @@ export function getBooks(): Promise<Book[]> {
  */
 export function getChapter(bookId: number, chapter: number): Promise<Chapter> {
   return invoke<Chapter>("get_chapter", { bookId, chapter });
+}
+
+/**
+ * Search the Bible: a book+chapter+verse reference ("John 3:16"), a
+ * book+chapter reference ("John 3"), or full-text word/phrase search
+ * (quoted text = exact phrase).
+ */
+export function searchBible(query: string): Promise<SearchResult> {
+  return invoke<SearchResult>("search_bible", { query });
 }

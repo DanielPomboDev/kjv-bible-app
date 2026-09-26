@@ -18,7 +18,7 @@ export function ChapterGrid({ book }: { book: Book }) {
           type="button"
           className="chapter-button"
           aria-current={bookId === book.id && chapter === n ? "true" : undefined}
-          onClick={() => selectChapter(book.id, n)}
+          onClick={() => selectChapter(book.id, n, book.name)}
         >
           {n}
         </button>
