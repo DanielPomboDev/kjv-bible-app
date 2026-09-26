@@ -65,7 +65,7 @@ function App() {
             </h1>
             <p>
               {loaded.verses.map((v) => (
-                <Verse key={v.id} verse={v.verse} text={v.text} />
+                <Verse key={v.id} id={v.id} verse={v.verse} text={v.text} />
               ))}
             </p>
           </>
