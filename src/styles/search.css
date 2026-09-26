@@ -171,7 +171,7 @@
 
 .search-hit-text {
   font-family: var(--font-reading);
-  font-size: var(--text-body-size);
+  font-size: var(--text-reading-size);
   color: var(--text-primary);
   line-height: 1.7;
   overflow: hidden;

@@ -34,6 +34,9 @@
   --font-reading: "Source Serif 4", Georgia, serif;
 
   --text-body-size: 1.0625rem;
+  /* Reading text size — user-adjustable via Settings (store/settings.ts
+     sets the inline override on :root; this is the default). */
+  --text-reading-size: 1.0625rem;
   --text-verse-number-size: 0.75rem;
 
   /* Spacing scale — pick from these, don't invent new numbers. */

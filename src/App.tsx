@@ -15,6 +15,7 @@ import "./styles/verse.css";
 import "./styles/navigation.css";
 import "./styles/search.css";
 import "./styles/copy-toolbar.css";
+import "./styles/settings.css";
 
 function App() {
   const bookId = useNavigation((s) => s.bookId);

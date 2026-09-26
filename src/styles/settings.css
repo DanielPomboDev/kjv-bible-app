@@ -1,0 +1,121 @@
+/*
+ * SettingsPanel — uses only tokens from tokens.css.
+ */
+
+.settings {
+  position: relative;
+  display: inline-flex;
+}
+
+.settings-gear {
+  padding: var(--space-1) var(--space-2);
+  background: none;
+  border: none;
+  font-size: var(--text-body-size);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.settings-gear:hover {
+  color: var(--accent);
+}
+
+.settings-gear:focus-visible,
+.settings-option:focus-visible,
+.settings-step:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.settings-popover {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 150;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px var(--scrim);
+}
+
+.settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.settings-label {
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.settings-segmented {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.settings-option {
+  flex: 1;
+  padding: var(--space-1) var(--space-2);
+  background: var(--background);
+  border: none;
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.settings-option + .settings-option {
+  border-left: 1px solid var(--border);
+}
+
+.settings-option[aria-pressed="true"] {
+  background: var(--selection);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.settings-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.settings-step {
+  min-width: 28px;
+  min-height: 28px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-ui);
+  font-size: var(--text-body-size);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.settings-step:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.settings-step:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.settings-value {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-primary);
+}
