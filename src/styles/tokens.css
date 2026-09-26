@@ -1,0 +1,43 @@
+/*
+ * Design tokens — every value here comes from the style guide.
+ * Components must use these variables, not raw colors/sizes.
+ */
+
+:root[data-theme="light"] {
+  --background: #FAF7F1;
+  --surface: #FFFFFF;
+  --text-primary: #2A2521;
+  --text-secondary: #5C5347;
+  --border: #E3DDD2;
+  --accent: #8A5A2B;
+  --selection: #F0E2C8;
+  --focus-ring: #4A7FBF;
+}
+
+:root[data-theme="dark"] {
+  --background: #1B1815;
+  --surface: #242019;
+  --text-primary: #EDE7DD;
+  --text-secondary: #C2BAAA;
+  --border: #3A342B;
+  --accent: #D9A25C;
+  --selection: #4A3B22;
+  --focus-ring: #6EA0E8;
+}
+
+:root {
+  --font-ui: -apple-system, "Segoe UI", sans-serif;
+  --font-reading: "Source Serif 4", Georgia, serif;
+
+  --text-body-size: 1.0625rem;
+  --text-verse-number-size: 0.75rem;
+
+  /* Spacing scale — pick from these, don't invent new numbers. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+}

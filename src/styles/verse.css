@@ -1,0 +1,27 @@
+/* Reading pane + Verse — uses only tokens from tokens.css */
+
+.reading-pane {
+  padding: var(--space-6) var(--space-4);
+  font-family: var(--font-reading);
+  font-size: var(--text-body-size);
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.chapter-heading {
+  font-family: var(--font-ui);
+  font-size: var(--text-body-size);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-4) 0;
+}
+
+/* Verse text flows as one paragraph; the superscript number is the only
+   separator between verses. */
+.verse-number {
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-secondary);
+  margin-right: var(--space-1);
+  user-select: none;
+}
