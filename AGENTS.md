@@ -53,7 +53,7 @@ data/           Bible source data + the generated database
 ## Clipboard format (exact)
 
 One verse:
-`John 3:16 — For God so loved the world...`
+`16 For God so loved the world...`
 
 Multiple verses: same format, one per line, separated by a blank line,
 always in book/chapter/verse order.
