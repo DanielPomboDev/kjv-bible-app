@@ -74,7 +74,11 @@ export function BookList() {
                     >
                       {book.name}
                     </button>
-                    {openBookId === book.id && <ChapterGrid book={book} />}
+                    {openBookId === book.id && (
+                      <div className="chapter-grid-section">
+                        <ChapterGrid book={book} />
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

@@ -14,6 +14,9 @@
   --hover: #F7F0E3;
   --focus-ring: #4A7FBF;
   --scrim: rgb(0 0 0 / 0.45);
+
+  --accent-soft: #F3E7D3;
+  --accent-contrast: #FFFFFF;
 }
 
 :root[data-theme="dark"] {
@@ -27,6 +30,9 @@
   --hover: #2F281B;
   --focus-ring: #6EA0E8;
   --scrim: rgb(0 0 0 / 0.6);
+
+  --accent-soft: #3B2E1C;
+  --accent-contrast: #241A0C;
 }
 
 :root {
@@ -38,6 +44,8 @@
      sets the inline override on :root; this is the default). */
   --text-reading-size: 1.0625rem;
   --text-verse-number-size: 0.75rem;
+  --text-heading-size: 1.5rem;
+  --text-kbd-size: 0.6875rem;
 
   /* Spacing scale — pick from these, don't invent new numbers. */
   --space-1: 4px;
@@ -47,4 +55,21 @@
   --space-6: 24px;
   --space-8: 32px;
   --space-12: 48px;
+
+  /* Radii scale: 4px small controls, 8px buttons/inputs/cards,
+     12px large surfaces (search panel, popovers, floating toolbar). */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Shadows for floating surfaces only — see the style guide. */
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.08);
+  --shadow-2: 0 2px 6px rgb(0 0 0 / 0.08), 0 8px 24px rgb(0 0 0 / 0.14);
+  --shadow-3: 0 4px 12px rgb(0 0 0 / 0.12), 0 16px 40px rgb(0 0 0 / 0.2);
+  --shadow-toolbar: 0 4px 16px rgb(0 0 0 / 0.18), 0 12px 32px rgb(0 0 0 / 0.22);
+
+  /* Motion */
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.3, 1);
 }

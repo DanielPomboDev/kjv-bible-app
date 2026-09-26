@@ -140,7 +140,6 @@ export function SearchOverlay() {
       ?.querySelector('[data-selected="true"]')
       ?.scrollIntoView({ block: "nearest" });
   }, [selected, navKey]);
-
   if (!open) return null;
 
   const trimmed = query.trim();
@@ -238,16 +237,24 @@ export function SearchOverlay() {
     >
       <div className="search-scrim" onClick={closeSearch} aria-hidden="true" />
       <div className="search-panel">
-        <input
-          ref={inputRef}
-          className="search-input"
-          type="text"
-          placeholder='Search — "John 3:16", a word, or "exact phrase"'
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          aria-label="Search query"
-          spellCheck={false}
-        />
+        <div className="search-input-row">
+          <span className="search-input-icon" aria-hidden="true">
+            🔍
+          </span>
+          <input
+            ref={inputRef}
+            className="search-input"
+            type="text"
+            placeholder='Search — "John 3:16", a word, or "exact phrase"'
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search query"
+            spellCheck={false}
+          />
+          <kbd className="search-kbd" aria-hidden="true">
+            Esc
+          </kbd>
+        </div>
         {body}
       </div>
     </div>

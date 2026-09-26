@@ -81,7 +81,9 @@ export function SettingsPanel() {
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
-        ⚙
+        <span className="settings-gear-icon" aria-hidden="true">
+          ⚙
+        </span>
       </button>
       {open && (
         <div className="settings-popover" role="dialog" aria-label="Settings">

@@ -11,8 +11,8 @@ import { useNavigation } from "./store/navigation";
 import { useSearch } from "./store/search";
 import "./styles/tokens.css";
 import "./styles/base.css";
-import "./styles/verse.css";
 import "./styles/navigation.css";
+import "./styles/verse.css";
 import "./styles/search.css";
 import "./styles/copy-toolbar.css";
 import "./styles/settings.css";
@@ -58,22 +58,26 @@ function App() {
       <BookList />
       <main className="reading-pane">
         <TopBar />
-        {error ? (
-          `Failed to load: ${error}`
-        ) : !loaded ? (
-          "Loading…"
-        ) : (
-          <>
-            <h1 className="chapter-heading">
-              {loaded.bookName} {loaded.chapter}
-            </h1>
-            <div>
-              {loaded.verses.map((v) => (
-                <Verse key={v.id} id={v.id} verse={v.verse} text={v.text} />
-              ))}
-            </div>
-          </>
-        )}
+        <div className="chapter-scroll">
+          <div className="chapter-body">
+            {error ? (
+              `Failed to load: ${error}`
+            ) : !loaded ? (
+              "Loading…"
+            ) : (
+              <>
+                <h1 className="chapter-heading">
+                  {loaded.bookName} {loaded.chapter}
+                </h1>
+                <div>
+                  {loaded.verses.map((v) => (
+                    <Verse key={v.id} id={v.id} verse={v.verse} text={v.text} />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </main>
       <SearchOverlay />
       <CopyToolbar />
