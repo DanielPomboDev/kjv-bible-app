@@ -27,6 +27,16 @@ pub struct Chapter {
     pub verses: Vec<ChapterVerse>,
 }
 
+/// A book with its chapter count, as returned to the frontend.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Book {
+    pub id: i64,
+    pub name: String,
+    pub testament: String, // "OT" or "NT"
+    pub chapter_count: i32,
+}
+
 fn open() -> Result<Connection, String> {
     let path = std::env::current_dir()
         .map_err(|e| format!("cannot determine working directory: {e}"))?
@@ -99,6 +109,36 @@ pub fn get_chapter(book_id: i32, chapter: i32) -> Result<Chapter, String> {
     })
 }
 
+/// All 66 books in canonical order, each with its number of chapters.
+#[tauri::command]
+pub fn get_books() -> Result<Vec<Book>, String> {
+    let conn = open()?;
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT b.id, b.name, b.testament,
+                    COALESCE((SELECT MAX(chapter) FROM verses WHERE book_id = b.id), 0)
+             FROM books b
+             ORDER BY b.book_order",
+        )
+        .map_err(|e| format!("failed to prepare query: {e}"))?;
+
+    let books = stmt
+        .query_map([], |row| {
+            Ok(Book {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                testament: row.get(2)?,
+                chapter_count: row.get(3)?,
+            })
+        })
+        .map_err(|e| format!("failed to query books: {e}"))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("failed to read books: {e}"))?;
+
+    Ok(books)
+}
+
 // The dev server runs src-tauri as its working directory, so tests can read
 // the real generated database when it exists.
 #[cfg(test)]
@@ -135,5 +175,53 @@ mod tests {
         }
         let err = get_chapter(43, 99).expect_err("John has only 21 chapters");
         assert!(err.contains("has 21 chapters"), "unexpected error: {err}");
+    }
+
+    #[test]
+    fn books_list_is_complete_with_chapter_counts() {
+        let path = Path::new(DB_RELATIVE_PATH);
+        if !path.is_file() {
+            eprintln!("skipping: data/bible.db not generated yet");
+            return;
+        }
+        let books = get_books().expect("get_books should succeed");
+        // The full KJV canon: nothing missing, nothing extra.
+        assert_eq!(books.len(), 66, "expected 66 books");
+        let total_chapters: i32 = books.iter().map(|b| b.chapter_count).sum();
+        assert_eq!(total_chapters, 1189, "expected 1189 chapters in total");
+        let ot_count = books.iter().filter(|b| b.testament == "OT").count();
+        assert_eq!(ot_count, 39, "expected 39 OT books");
+        assert_eq!(books[0].name, "Genesis");
+        assert_eq!(books[0].chapter_count, 50);
+        assert_eq!(books[65].name, "Revelation");
+        assert_eq!(books[65].chapter_count, 22);
+        // Every book must have at least one chapter.
+        assert!(books.iter().all(|b| b.chapter_count > 0));
+    }
+
+    #[test]
+    fn every_chapter_of_every_book_loads() {
+        let path = Path::new(DB_RELATIVE_PATH);
+        if !path.is_file() {
+            eprintln!("skipping: data/bible.db not generated yet");
+            return;
+        }
+        let books = get_books().expect("get_books should succeed");
+        let mut total_chapters = 0;
+        let mut total_verses = 0;
+        for book in &books {
+            for chapter in 1..=book.chapter_count {
+                let ch = get_chapter(book.id as i32, chapter)
+                    .unwrap_or_else(|e| panic!("{} {}: {e}", book.name, chapter));
+                assert_eq!(ch.book_name, book.name);
+                assert_eq!(ch.chapter, chapter);
+                assert!(!ch.verses.is_empty(), "{} {} has no verses", book.name, chapter);
+                total_chapters += 1;
+                total_verses += ch.verses.len();
+            }
+        }
+        assert_eq!(total_chapters, 1189);
+        // project notes: after importing, 66 books / 31,102 verses confirms nothing is missing.
+        assert_eq!(total_verses, 31_102);
     }
 }
