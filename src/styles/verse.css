@@ -16,10 +16,12 @@
   margin: 0 0 var(--space-4) 0;
 }
 
-/* Verse text flows as one paragraph; the superscript number is the only
-   separator between verses. Selection state per DESIGN-SYSTEM.md: hover
-   tint, selected background + accent left border. */
+/* Verses read as printed Bibles: each verse is its own block — verse
+   number, text, then a break before the next. Hover/selection styles
+   below are unchanged from DESIGN-SYSTEM.md. */
 .verse {
+  display: block;
+  margin-bottom: var(--space-3);
   cursor: pointer;
 }
 

@@ -67,11 +67,11 @@ function App() {
             <h1 className="chapter-heading">
               {loaded.bookName} {loaded.chapter}
             </h1>
-            <p>
+            <div>
               {loaded.verses.map((v) => (
                 <Verse key={v.id} id={v.id} verse={v.verse} text={v.text} />
               ))}
-            </p>
+            </div>
           </>
         )}
       </main>

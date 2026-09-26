@@ -35,13 +35,13 @@ export function Verse({ id, verse, text }: { id: number; verse: number; text: st
   }, [id, verse, text, showToast]);
 
   return (
-    <span
+    <div
       className={`verse${selected ? " verse-selected" : ""}`}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       data-verse-id={id}
     >
       <sup className="verse-number">{verse}</sup> {text}
-    </span>
+    </div>
   );
 }
