@@ -9,6 +9,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             db::get_books,
             db::get_chapter,
+            db::get_verses_by_ids,
             search::search_bible
         ])
         .run(tauri::generate_context!())

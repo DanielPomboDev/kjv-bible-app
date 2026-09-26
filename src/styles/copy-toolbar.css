@@ -1,0 +1,78 @@
+/*
+ * Copy toolbar + Toast — uses only tokens from tokens.css.
+ */
+
+.copy-toolbar {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  box-shadow: 0 -4px 16px var(--scrim);
+  animation: copy-toolbar-rise 160ms ease-out;
+}
+
+@keyframes copy-toolbar-rise {
+  from {
+    transform: translate(-50%, 100%);
+  }
+  to {
+    transform: translate(-50%, 0);
+  }
+}
+
+.copy-toolbar-count {
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-secondary);
+}
+
+.copy-toolbar-button {
+  padding: var(--space-1) var(--space-2);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.copy-toolbar-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.copy-toolbar-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.copy-toolbar-button:focus-visible,
+.toast:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-8);
+  transform: translateX(-50%);
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px var(--scrim);
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-primary);
+  z-index: 200;
+}

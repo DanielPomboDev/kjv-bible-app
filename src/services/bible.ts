@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Book, Chapter, SearchResult } from "../domain/types";
+import type { Book, Chapter, ChapterVerse, SearchResult } from "../domain/types";
 
 /**
  * All 66 books in canonical order, each with its chapter count.
@@ -23,4 +23,12 @@ export function getChapter(bookId: number, chapter: number): Promise<Chapter> {
  */
 export function searchBible(query: string): Promise<SearchResult> {
   return invoke<SearchResult>("search_bible", { query });
+}
+
+/**
+ * Fetch selected verses by id, in canonical book/chapter/verse order —
+ * used by "Copy Selected" so multi-chapter selections keep Bible order.
+ */
+export function getVersesByIds(ids: number[]): Promise<ChapterVerse[]> {
+  return invoke<ChapterVerse[]>("get_verses_by_ids", { ids });
 }

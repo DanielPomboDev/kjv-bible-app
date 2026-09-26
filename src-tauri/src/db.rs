@@ -141,6 +141,53 @@ pub fn get_books() -> Result<Vec<Book>, String> {
     Ok(books)
 }
 
+/// Fetch verses by id — used by "Copy Selected". Returned in canonical
+/// book/chapter/verse order, which is simply `ORDER BY id` because the
+/// importer assigns ids 1..N in canonical order. Query runs in chunks so
+/// even a whole-Bible selection stays under SQLite's parameter limit.
+#[tauri::command]
+pub fn get_verses_by_ids(ids: Vec<i64>) -> Result<Vec<ChapterVerse>, String> {
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let conn = open()?;
+    const CHUNK_SIZE: usize = 900;
+    let mut out: Vec<ChapterVerse> = Vec::new();
+    for chunk in ids.chunks(CHUNK_SIZE) {
+        let placeholders = std::iter::repeat("?")
+            .take(chunk.len())
+            .collect::<Vec<_>>()
+            .join(", ");
+        let sql = format!(
+            "SELECT v.id, b.name, v.chapter, v.verse, v.text
+             FROM verses v
+             JOIN books b ON b.id = v.book_id
+             WHERE v.id IN ({placeholders})
+             ORDER BY v.id"
+        );
+        let mut stmt = conn
+            .prepare(&sql)
+            .map_err(|e| format!("failed to prepare verse lookup: {e}"))?;
+        let rows = stmt
+            .query_map(rusqlite::params_from_iter(chunk.iter()), |row| {
+                Ok(ChapterVerse {
+                    id: row.get(0)?,
+                    book_name: row.get(1)?,
+                    chapter: row.get(2)?,
+                    verse: row.get(3)?,
+                    text: row.get(4)?,
+                })
+            })
+            .map_err(|e| format!("failed to query verses: {e}"))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| format!("failed to read verses: {e}"))?;
+        out.extend(rows);
+    }
+    // The caller may pass ids in any order; canonical order is by id.
+    out.sort_unstable_by_key(|v| v.id);
+    Ok(out)
+}
+
 /// Book-name lookups shared by db.rs and search.rs.
 mod book_lookup {
     use rusqlite::Connection;
@@ -246,6 +293,45 @@ mod tests {
         // Every book must have at least one chapter.
         assert!(books.iter().all(|b| b.chapter_count > 0));
     }
+
+    #[test]
+    fn get_verses_by_ids_returns_canonical_order() {
+        let path = Path::new(DB_RELATIVE_PATH);
+        if !path.is_file() {
+            eprintln!("skipping: data/bible.db not generated yet");
+            return;
+        }
+        // Two verses from different chapters, requested out of order.
+        let john2 = get_chapter(43, 2).expect("John 2");
+        let john3 = get_chapter(43, 3).expect("John 3");
+        let last_of_j2 = john2.verses.last().expect("John 2 has verses").clone();
+        let first_of_j3 = john3.verses.first().expect("John 3 has verses").clone();
+        assert!(last_of_j2.id < first_of_j3.id);
+
+        let out = get_verses_by_ids(vec![first_of_j3.id, last_of_j2.id])
+            .expect("get_verses_by_ids should succeed");
+        assert_eq!(out.len(), 2);
+        assert_eq!(out[0].id, last_of_j2.id, "lower id (earlier chapter) first");
+        assert_eq!(out[0].book_name, "John");
+        assert_eq!(out[0].chapter, 2);
+        assert_eq!(out[1].id, first_of_j3.id);
+        assert_eq!(out[1].chapter, 3);
+        assert_eq!(out[1].text, first_of_j3.text);
+    }
+
+    #[test]
+    fn get_verses_by_ids_handles_empty_and_unknown() {
+        let path = Path::new(DB_RELATIVE_PATH);
+        if !path.is_file() {
+            eprintln!("skipping: data/bible.db not generated yet");
+            return;
+        }
+        assert!(get_verses_by_ids(Vec::new())
+            .expect("empty input")
+            .is_empty());
+        let out = get_verses_by_ids(vec![999_999_999])
+            .expect("unknown ids are skipped, not an error");
+        assert!(out.is_empty());    }
 
     #[test]
     fn every_chapter_of_every_book_loads() {

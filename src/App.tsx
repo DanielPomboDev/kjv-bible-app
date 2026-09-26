@@ -5,6 +5,8 @@ import { Verse } from "./components/Verse";
 import { BookList } from "./components/BookList";
 import { TopBar } from "./components/TopBar";
 import { SearchOverlay } from "./components/SearchOverlay";
+import { CopyToolbar } from "./components/CopyToolbar";
+import { Toast } from "./components/Toast";
 import { useNavigation } from "./store/navigation";
 import { useSearch } from "./store/search";
 import "./styles/tokens.css";
@@ -12,6 +14,7 @@ import "./styles/base.css";
 import "./styles/verse.css";
 import "./styles/navigation.css";
 import "./styles/search.css";
+import "./styles/copy-toolbar.css";
 
 function App() {
   const bookId = useNavigation((s) => s.bookId);
@@ -72,6 +75,8 @@ function App() {
         )}
       </main>
       <SearchOverlay />
+      <CopyToolbar />
+      <Toast />
     </div>
   );
 }
