@@ -25,6 +25,7 @@ disappears when nothing is selected.
   --border: #E3DDD2;
   --accent: #8A5A2B;
   --selection: #F0E2C8;
+  --hover: #F7F0E3;             /* faint hover tint */
   --focus-ring: #4A7FBF;
   --scrim: rgb(0 0 0 / 0.45);   /* overlay backdrop */
 }
@@ -37,6 +38,7 @@ disappears when nothing is selected.
   --border: #3A342B;
   --accent: #D9A25C;
   --selection: #4A3B22;
+  --hover: #2F281B;             /* faint hover tint */
   --focus-ring: #6EA0E8;
   --scrim: rgb(0 0 0 / 0.6);    /* overlay backdrop */
 }
@@ -57,7 +59,7 @@ new numbers.
 ## Verse selection states
 
 - Default: no background.
-- Hover: faint background tint.
+- Hover: faint background tint (`--hover`).
 - Selected: `background: var(--selection)`, left border in `--accent`.
 - Focused (keyboard): 2px outline in `--focus-ring`.
 

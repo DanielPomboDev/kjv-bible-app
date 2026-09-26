@@ -17,7 +17,21 @@
 }
 
 /* Verse text flows as one paragraph; the superscript number is the only
-   separator between verses. */
+   separator between verses. Selection state per DESIGN-SYSTEM.md: hover
+   tint, selected background + accent left border. */
+.verse {
+  cursor: pointer;
+}
+
+.verse:hover:not(.verse-selected) {
+  background: var(--hover);
+}
+
+.verse-selected {
+  background: var(--selection);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
 .verse-number {
   font-family: var(--font-ui);
   font-size: var(--text-verse-number-size);
