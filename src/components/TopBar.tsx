@@ -1,5 +1,6 @@
 import { useNavigation } from "../store/navigation";
 import { useSearch } from "../store/search";
+import { SermonDeckPanel } from "./SermonDeckPanel";
 import { SettingsPanel } from "./SettingsPanel";
 
 /**
@@ -34,7 +35,10 @@ export function TopBar() {
         <span className="top-bar-search-placeholder">Search…</span>
         <kbd className="top-bar-search-kbd">Ctrl+K</kbd>
       </button>
-      <SettingsPanel />
+      <div className="top-bar-actions">
+        <SermonDeckPanel />
+        <SettingsPanel />
+      </div>
     </header>
   );
 }

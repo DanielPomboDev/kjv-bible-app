@@ -87,6 +87,16 @@
   outline-offset: -2px;
 }
 
+/* Right-hand icon cluster: sermon deck + settings. The search field
+   pushes it to the far edge. */
+.top-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 /* --- Search overlay --- */
 
 .search-overlay {
