@@ -1,0 +1,132 @@
+/*
+ * HelpPanel — uses only tokens from tokens.css. Structure mirrors the
+ * settings popover (toggle button + floating dialog).
+ */
+
+.help {
+  position: relative;
+  display: inline-flex;
+}
+
+.help-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-8);
+  height: var(--space-8);
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--text-body-size);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color var(--motion-fast) var(--ease-out),
+    background-color var(--motion-fast) var(--ease-out);
+}
+
+.help-toggle:hover {
+  color: var(--accent);
+  background: var(--hover);
+}
+
+.help-toggle-icon {
+  display: inline-flex;
+}
+
+.help-toggle-icon svg {
+  width: var(--space-4);
+  height: var(--space-4);
+}
+
+.help-toggle:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.help-popover {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 150;
+  width: 300px;
+  max-height: min(70vh, 480px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  transform-origin: top right;
+  animation: help-popover-pop var(--motion-base) var(--ease-out);
+}
+
+@keyframes help-popover-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.help-title {
+  font-family: var(--font-ui);
+  font-size: var(--text-body-size);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.help-section-title {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.help-list {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.help-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.help-keys {
+  display: flex;
+  gap: var(--space-1);
+  min-width: 96px;
+}
+
+.help-kbd {
+  padding: var(--space-1) var(--space-2);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-size: var(--text-kbd-size);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.help-action {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-primary);
+}

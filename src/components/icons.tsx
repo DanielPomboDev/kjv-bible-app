@@ -154,3 +154,14 @@ export function MinusIcon(props: IconProps) {
     </Svg>
   );
 }
+
+/** Help — question mark in a circle, drawn as strokes (no text glyph). */
+export function HelpIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" />
+      <path d="M12 17h.01" />
+    </Svg>
+  );
+}

@@ -37,6 +37,16 @@ interface ActiveSermonState {
   /** Queue a slide, keeping insertion order. False when the id exists. */
   addToDeck: (entry: SermonDeckItem) => boolean;
   /**
+   * Queue many slides at once (the selection toolbar's "Add to Deck"):
+   * one commit, insertion order kept, entries whose id is already in
+   * the deck (or repeated in the batch) skipped. Reports both counts
+   * so the caller can toast what happened.
+   */
+  addManyToDeck: (entries: SermonDeckItem[]) => {
+    added: number;
+    skipped: number;
+  };
+  /**
    * Build a custom slide (optional title, required body) and append it.
    * Returns the new item, or null when the body is blank.
    */
@@ -157,6 +167,20 @@ export const useActiveSermon = create<ActiveSermonState>()((set, get) => {
       if (sermon.deck.some((e) => e.id === entry.id)) return false;
       commit({ ...sermon, deck: [...sermon.deck, entry] });
       return true;
+    },
+
+    addManyToDeck: (entries) => {
+      const { sermon } = get();
+      const seen = new Set(sermon.deck.map((e) => e.id));
+      const fresh = entries.filter((e) => {
+        if (seen.has(e.id)) return false;
+        seen.add(e.id);
+        return true;
+      });
+      if (fresh.length > 0) {
+        commit({ ...sermon, deck: [...sermon.deck, ...fresh] });
+      }
+      return { added: fresh.length, skipped: entries.length - fresh.length };
     },
 
     addCustomSlide: (title, body) => {

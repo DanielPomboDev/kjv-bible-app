@@ -83,3 +83,44 @@
 .verse:hover:not(.verse-selected) .verse-number {
   color: var(--accent);
 }
+
+/* Previous/next chapter row at the end of the chapter — quiet buttons
+   that read as pager links, disabled at the Bible's two ends. */
+.chapter-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border);
+}
+
+.chapter-nav-button {
+  padding: var(--space-2) var(--space-4);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    border-color var(--motion-fast) var(--ease-out),
+    color var(--motion-fast) var(--ease-out);
+}
+
+.chapter-nav-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.chapter-nav-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.chapter-nav-button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
