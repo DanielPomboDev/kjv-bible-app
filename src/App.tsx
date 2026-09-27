@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getChapter } from "./services/bible";
-import type { Chapter } from "./domain/types";
+import type { Chapter, ChapterVerse } from "./domain/types";
 import { Verse } from "./components/Verse";
 import { BookList } from "./components/BookList";
 import { TopBar } from "./components/TopBar";
 import { SearchOverlay } from "./components/SearchOverlay";
 import { CopyToolbar } from "./components/CopyToolbar";
+import { VerseContextMenu } from "./components/VerseContextMenu";
 import { Toast } from "./components/Toast";
 import { useNavigation } from "./store/navigation";
 import { useSearch } from "./store/search";
@@ -16,6 +17,7 @@ import "./styles/verse.css";
 import "./styles/search.css";
 import "./styles/copy-toolbar.css";
 import "./styles/settings.css";
+import "./styles/context-menu.css";
 
 function App() {
   const bookId = useNavigation((s) => s.bookId);
@@ -23,6 +25,23 @@ function App() {
   const openSearch = useSearch((s) => s.openSearch);
   const [loaded, setLoaded] = useState<Chapter | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Right-click menu state: the full ChapterVerse (resolved from the
+  // loaded chapter when Verse reports a right-click) + cursor position.
+  const [menuVerse, setMenuVerse] = useState<ChapterVerse | null>(null);
+  const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
+
+  const closeMenu = useCallback(() => setMenuVerse(null), []);
+
+  const openVerseMenu = useCallback(
+    (verseId: number, x: number, y: number) => {
+      const verse = loaded?.verses.find((v) => v.id === verseId);
+      if (!verse) return;
+      setMenuPos({ x, y });
+      setMenuVerse(verse);
+    },
+    [loaded],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -71,7 +90,13 @@ function App() {
                 </h1>
                 <div>
                   {loaded.verses.map((v) => (
-                    <Verse key={v.id} id={v.id} verse={v.verse} text={v.text} />
+                    <Verse
+                      key={v.id}
+                      id={v.id}
+                      verse={v.verse}
+                      text={v.text}
+                      onContextMenu={openVerseMenu}
+                    />
                   ))}
                 </div>
               </>
@@ -81,6 +106,7 @@ function App() {
       </main>
       <SearchOverlay />
       <CopyToolbar />
+      <VerseContextMenu verse={menuVerse} x={menuPos.x} y={menuPos.y} onClose={closeMenu} />
       <Toast />
     </div>
   );

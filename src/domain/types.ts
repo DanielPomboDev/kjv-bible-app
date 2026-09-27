@@ -36,6 +36,21 @@ export interface SearchHit {
 }
 
 /**
+ * One queued verse in the sermon deck — an ordered list meant for
+ * presenting. Persists the label/text itself (see store/sermonDeck.ts)
+ * so presentation needs no extra lookup, and the deck survives app
+ * restarts the way settings do.
+ */
+export interface SermonDeckEntry {
+  /** Canonical verse id (verses.id), unique within the deck. */
+  id: number;
+  /** e.g. "John 3:16" — ready-made slide label. */
+  label: string;
+  /** Verse text as it appears in the reader. */
+  text: string;
+}
+
+/**
  * The backend's verdict on a query, plus its results:
  * - `verse`:   "John 3:16" — that single verse
  * - `chapter`: "John 3" — every verse of the chapter, in order
