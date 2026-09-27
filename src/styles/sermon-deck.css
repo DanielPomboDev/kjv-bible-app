@@ -183,12 +183,16 @@
 }
 
 .sermon-deck-title {
+  min-width: 0;
+  overflow: hidden;
   font-family: var(--font-ui);
   font-size: var(--text-verse-number-size);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sermon-deck-count {

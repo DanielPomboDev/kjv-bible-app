@@ -7,8 +7,9 @@
  * text/reference colors so every preset stays readable.
  *
  * Preset #1 is always "Classic Black" (solid black, light text) and is the
- * default on first run. The selected preset id lives in a
- * `presentationBackgroundStore` (persisted like settings); the picker and
+ * default on first run. The selected preset id lives on the currently
+ * open sermon (`sermon.backgroundPresetId` in store/activeSermon.ts,
+ * persisted like settings); the picker and
  * the presentation window consume this list. Apply a preset by setting the
  * stage element's inline style from `background`/`textColor`/
  * `referenceColor`.

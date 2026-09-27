@@ -1,0 +1,54 @@
+/*
+ * Sermon outline tab — uses only tokens from tokens.css. Row, editor,
+ * and button visuals are reused from sermon-deck.css
+ * (`.sermon-deck-row`, `.sermon-deck-btn`, `.sermon-deck-secondary`,
+ * `.custom-slide-*`), so the tabs read as one panel; only the tab bar
+ * itself and the outline's Add Section row live here.
+ */
+
+/* Deck/Outline switcher inside the sermon panel header. */
+.sermon-deck-tabs {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.sermon-deck-tab {
+  flex: 1;
+  min-height: var(--space-8);
+  padding: 0;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast) var(--ease-out);
+}
+
+.sermon-deck-tab:hover {
+  color: var(--accent);
+}
+
+.sermon-deck-tab[aria-selected="true"] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.sermon-deck-tab:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+/* Add Section row at the top of the outline tab. */
+.outline-top {
+  display: flex;
+  padding: var(--space-4) var(--space-4) 0;
+}
+
+.outline-top .sermon-deck-secondary {
+  flex: 1;
+}

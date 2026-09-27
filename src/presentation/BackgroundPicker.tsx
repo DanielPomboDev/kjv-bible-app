@@ -1,17 +1,17 @@
 import { BACKGROUND_PRESETS } from "./backgroundPresets";
-import { usePresentationBackground } from "../store/presentationBackground";
+import { useActiveSermon } from "../store/activeSermon";
 
 /**
  * Background picker (AGENTS.md, Slide background rule #5): a grid of 10
  * small preview swatches, one per preset, each showing its actual
  * background so it's recognizable at a glance. Clicking (or Enter/Space
- * on) a swatch selects that preset in the presentationBackgroundStore
- * and closes the picker via `onClose`. The current preset is highlighted
- * and marked with `aria-pressed`.
+ * on) a swatch selects that preset on the currently open sermon
+ * (`sermon.backgroundPresetId`) and closes the picker via `onClose`.
+ * The current preset is highlighted and marked with `aria-pressed`.
  */
 export function BackgroundPicker({ onClose }: { onClose: () => void }) {
-  const presetId = usePresentationBackground((s) => s.presetId);
-  const setPresetId = usePresentationBackground((s) => s.setPresetId);
+  const presetId = useActiveSermon((s) => s.sermon.backgroundPresetId);
+  const setPresetId = useActiveSermon((s) => s.setBackgroundPresetId);
 
   return (
     <div className="background-picker" role="dialog" aria-label="Slide background">

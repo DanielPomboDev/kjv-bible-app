@@ -1,18 +1,29 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { presentDeck } from "../services/presentation";
-import { useSermonDeck } from "../store/sermonDeck";
-import { usePresentationBackground } from "../store/presentationBackground";
+import { useActiveSermon } from "../store/activeSermon";
 import type { CustomSlideItem } from "../domain/types";
 import { useToast } from "../store/toast";
 import { BackgroundPicker } from "../presentation/BackgroundPicker";
 import { CustomSlideEditor } from "../presentation/CustomSlideEditor";
+import { OutlineTab } from "../sermon/OutlineTab";
 import { ArrowDownIcon, ArrowUpIcon, CloseIcon, DeckIcon } from "./icons";
 
 /**
- * The sermon deck panel: a stack button in the TopBar opening a popover
- * that lists the queued verses in presentation order — reference plus a
- * short text preview per row, with up/down reorder buttons and a remove
- * button (AGENTS.md: keyboard must work, so everything is real buttons).
+ * The sermon panel: a stack button in the TopBar opening a popover with
+ * two tabs — Deck and Outline — for the currently open sermon.
+ *
+ * The Deck tab lists the queued slides in presentation order — reference
+ * plus a short text preview per row, with up/down reorder buttons and a
+ * remove button (AGENTS.md: keyboard must work, so everything is real
+ * buttons). The Outline tab holds the sermon's planning sections
+ * (AGENTS.md, Outline rules): ordered, editable, and never presented —
+ * separate from the deck on purpose.
  *
  * Mirrors SettingsPanel's popover behaviour: Escape or an outside click
  * closes it; styled with popover tokens (surface, radius-lg, shadow-2).
@@ -21,19 +32,36 @@ import { ArrowDownIcon, ArrowUpIcon, CloseIcon, DeckIcon } from "./icons";
  */
 export function SermonDeckPanel() {
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<"deck" | "outline">("deck");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   // Non-null while the editor is editing an existing custom slide (its
   // id); null when adding a fresh one.
   const [editingId, setEditingId] = useState<string | null>(null);
-  const deck = useSermonDeck((s) => s.deck);
-  const addCustomSlide = useSermonDeck((s) => s.addCustomSlide);
-  const updateCustomSlide = useSermonDeck((s) => s.updateCustomSlide);
-  const removeFromDeck = useSermonDeck((s) => s.removeFromDeck);
-  const moveInDeck = useSermonDeck((s) => s.moveInDeck);
-  const clearDeck = useSermonDeck((s) => s.clearDeck);
+  const deck = useActiveSermon((s) => s.sermon.deck);
+  const outlineCount = useActiveSermon((s) => s.sermon.outline.length);
+  const sermonTitle = useActiveSermon((s) => s.sermon.title);
+  const addCustomSlide = useActiveSermon((s) => s.addCustomSlide);
+  const updateCustomSlide = useActiveSermon((s) => s.updateCustomSlide);
+  const removeFromDeck = useActiveSermon((s) => s.removeFromDeck);
+  const moveInDeck = useActiveSermon((s) => s.moveInDeck);
+  const clearDeck = useActiveSermon((s) => s.clearDeck);
   const showToast = useToast((s) => s.showToast);
   const panelRef = useRef<HTMLDivElement>(null);
+  const deckTabRef = useRef<HTMLButtonElement>(null);
+  const outlineTabRef = useRef<HTMLButtonElement>(null);
+
+  // Arrow keys move between the Deck/Outline tabs (tablist pattern).
+  const onTabsKeyDown = useCallback(
+    (e: ReactKeyboardEvent) => {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      e.preventDefault();
+      const next = tab === "deck" ? "outline" : "deck";
+      setTab(next);
+      (next === "deck" ? deckTabRef : outlineTabRef).current?.focus();
+    },
+    [tab],
+  );
 
   // Close the editor (whether adding or editing) and forget which
   // slide was being edited.
@@ -90,9 +118,9 @@ export function SermonDeckPanel() {
   const onPresent = useCallback(() => {
     if (deck.length > 0) {
       setOpen(false);
-      // Snapshot the selected background so the stage renders the new
-      // look picked just before presenting.
-      const background = usePresentationBackground.getState().presetId;
+      // Snapshot the open sermon's background so the stage renders the
+      // new look picked just before presenting.
+      const background = useActiveSermon.getState().sermon.backgroundPresetId;
       void presentDeck(deck, background).catch((e) =>
         showToast(`Presentation failed: ${e}`),
       );
@@ -169,16 +197,26 @@ export function SermonDeckPanel() {
         )}
       </button>
       {open && (
-        <div className="sermon-deck-panel" role="dialog" aria-label="Sermon deck">
+        <div
+          className="sermon-deck-panel"
+          role="dialog"
+          aria-label={tab === "deck" ? "Sermon deck" : "Sermon outline"}
+        >
           <div className="sermon-deck-header">
             <div className="sermon-deck-header-top">
-              <span className="sermon-deck-title">Sermon Deck</span>
-              <span className="sermon-deck-count" aria-live="polite">
-                {count === 0
-                  ? "Empty"
-                  : `${count} slide${count === 1 ? "" : "s"}`}
+              <span className="sermon-deck-title" title={sermonTitle}>
+                {sermonTitle}
               </span>
-              {count > 0 && (
+              <span className="sermon-deck-count" aria-live="polite">
+                {tab === "deck"
+                  ? count === 0
+                    ? "Empty"
+                    : `${count} slide${count === 1 ? "" : "s"}`
+                  : outlineCount === 0
+                    ? "Empty"
+                    : `${outlineCount} section${outlineCount === 1 ? "" : "s"}`}
+              </span>
+              {tab === "deck" && count > 0 && (
                 <button
                   type="button"
                   className="sermon-deck-clear"
@@ -188,6 +226,36 @@ export function SermonDeckPanel() {
                 </button>
               )}
             </div>
+            <div
+              className="sermon-deck-tabs"
+              role="tablist"
+              aria-label="Sermon panel"
+              onKeyDown={onTabsKeyDown}
+            >
+              <button
+                type="button"
+                role="tab"
+                ref={deckTabRef}
+                className="sermon-deck-tab"
+                aria-selected={tab === "deck"}
+                tabIndex={tab === "deck" ? 0 : -1}
+                onClick={() => setTab("deck")}
+              >
+                Deck
+              </button>
+              <button
+                type="button"
+                role="tab"
+                ref={outlineTabRef}
+                className="sermon-deck-tab"
+                aria-selected={tab === "outline"}
+                tabIndex={tab === "outline" ? 0 : -1}
+                onClick={() => setTab("outline")}
+              >
+                Outline
+              </button>
+            </div>
+            {tab === "deck" && (
             <div className="sermon-deck-header-actions">
               {count > 0 && (
                 <button
@@ -222,7 +290,10 @@ export function SermonDeckPanel() {
                 Add Custom Slide
               </button>
             </div>
+            )}
           </div>
+          {tab === "deck" ? (
+          <>
           {pickerOpen && (
             <BackgroundPicker onClose={() => setPickerOpen(false)} />
           )}
@@ -328,6 +399,10 @@ export function SermonDeckPanel() {
                 );
               })}
             </ol>
+          )}
+          </>
+          ) : (
+            <OutlineTab />
           )}
         </div>
       )}

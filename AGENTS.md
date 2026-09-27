@@ -21,12 +21,15 @@ clipboard cleanly formatted. No login, no internet, no cloud.
 
 ```
 src/            React frontend
-  domain/       shared types (Book, Verse, etc.)
+  domain/       shared types (Book, Verse, SlideItem, Sermon, Outline, etc.)
   services/     functions that call the Rust backend
-  store/        Zustand stores (selection, search, settings, sermonDeck,
-                presentationBackground)
+  store/        Zustand stores (selection, search, settings, sermonLibrary,
+                activeSermon, presentationBackground)
   components/   UI components
-  presentation/ PresentationWindow, SlideView, BackgroundPicker
+  sermon/       SermonLibrary (list/create/open/delete), OutlineEditor
+  presentation/ PresentationWindow (audience-facing, existing), PresenterWindow
+                (new — presenter-only, notes), SlideView, CustomSlideView,
+                BackgroundPicker, CustomSlideEditor, MonitorPicker
   styles/       tokens.css + component styles
 src-tauri/      Rust backend
   src/
@@ -76,6 +79,81 @@ data/           Bible source data + the generated database
 5. Background selection happens through a picker (grid of small preview
    swatches, one per preset) reachable from the sermon deck panel or
    presentation window — not by editing a file or config.
+
+## Custom slide rules
+
+1. The sermon deck holds a single ordered list of **slide items**, where
+   each item is either a Bible verse slide (existing) or a custom slide
+   (new) — model this as a discriminated union (e.g. `{ type: 'verse', ...
+   }` vs `{ type: 'custom', ... }`) so the deck can freely mix both types
+   in any order, instead of keeping two separate lists.
+2. A custom slide is just a title (optional) and body text (required) —
+   no rich text formatting, no images, no slide layouts to choose from in
+   v1. Keep it simple: this is for sermon points/headings, not a full
+   PowerPoint replacement.
+3. Custom slides use the same 10 background presets as verse slides —
+   don't build a separate background system for them.
+4. Custom slides support the same fullscreen keyboard navigation
+   (→/Space/←/Esc) as verse slides — from the presenter's side, both slide
+   types behave identically to move through.
+5. Editing an existing custom slide updates it in place in the deck; it
+   does not create a new entry.
+
+## Sermon library rules
+
+1. Introduce a **Sermon** as the top-level saved unit: a title, a date, its
+   outline (see below), its deck (the ordered list of slide items — verses
+   and custom slides), and its chosen background preset. Everything that
+   used to be one global sermon deck becomes a property of "the currently
+   open sermon" instead.
+2. Add a Sermon Library screen: list saved sermons (title + date), create a
+   new one, open an existing one, rename, delete (with confirmation before
+   delete — this is destructive). Persist sermons the same way settings
+   already persist, one record per sermon.
+3. Only one sermon is "open"/active in the UI at a time. Opening a
+   different sermon swaps out the active outline, deck, and background —
+   it does not merge them.
+4. When this feature is first added, migrate whatever is currently in the
+   single global deck/background into one sermon (e.g. titled "Untitled
+   Sermon") so existing work isn't lost.
+
+## Outline rules
+
+1. An outline belongs to a sermon and is a simple ordered list of sections
+   (e.g. Introduction, Point 1, Point 2, Conclusion), each with a heading
+   and plain body text — no rich formatting, no images, same philosophy as
+   custom slides.
+2. The outline is for planning/reference only — it is not itself presented
+   and is separate from the deck of slides. Don't conflate the two.
+3. Sections can be added, reordered, removed, and edited like the custom
+   slide list already works.
+
+## Presenter notes & dual-window rules
+
+1. Each slide item (verse or custom) gets an optional **notes** field —
+   private text for the presenter only, editable from the deck panel.
+2. Presenting uses two separate windows, never one:
+   - **Presentation window** (existing) — fullscreen, audience-facing,
+     shows only the slide's actual content (verse or custom slide + chosen
+     background). It must NEVER render notes, under any circumstance.
+   - **Presenter window** (new) — stays on the screen the app is already
+     running on. Shows the current slide, a preview of the next slide, the
+     current slide's notes, and access to the sermon's outline.
+3. Before presenting, the user picks which connected monitor the
+   Presentation window should open fullscreen on (enumerate available
+   monitors via Tauri's monitor APIs). The Presenter window stays on
+   whichever screen the picker was opened from.
+4. If only one monitor is detected, show a clear warning that notes will be
+   visible to the audience since there's no second screen to separate
+   them — don't silently proceed as if it's safe.
+5. This separation only works if the OS displays are set to **Extend**,
+   not **Duplicate/Mirror** — mirrored displays render identical pixels on
+   both screens and no application can override that. Show a one-time
+   reminder (e.g. the first time presenter view is opened) telling the user
+   to set their display mode to Extend before presenting.
+6. Keyboard navigation (→/Space/←/Esc) drives both windows in sync —
+   advancing in the Presenter window advances the Presentation window too,
+   and vice versa.
 
 ## Rules (the important ones)
 

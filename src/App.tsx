@@ -19,6 +19,8 @@ import "./styles/copy-toolbar.css";
 import "./styles/settings.css";
 import "./styles/context-menu.css";
 import "./styles/sermon-deck.css";
+import "./styles/sermon-library.css";
+import "./styles/outline.css";
 import "./styles/background-picker.css";
 
 function App() {

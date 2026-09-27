@@ -77,6 +77,16 @@ export function PanelLeftIcon(props: IconProps) {
   );
 }
 
+/** Closed book — sermon library toggle (a shelf of saved sermons). */
+export function LibraryIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 19V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2Z" />
+      <path d="M4 19a2 2 0 0 0 2 2h13" />
+    </Svg>
+  );
+}
+
 /** Chevron — collapsible testament sections (rotated via CSS). */
 export function ChevronDownIcon(props: IconProps) {
   return (

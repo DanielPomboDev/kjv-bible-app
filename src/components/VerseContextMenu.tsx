@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { presentNow } from "../services/presentation";
-import { useSermonDeck } from "../store/sermonDeck";
-import { usePresentationBackground } from "../store/presentationBackground";
+import { useActiveSermon } from "../store/activeSermon";
 import { useToast } from "../store/toast";
 import type { ChapterVerse, SermonDeckEntry } from "../domain/types";
 
 /**
  * Right-click menu on a verse: "Present Now" (fullscreen presentation
  * comes in a later step — for now the verse is logged to the console)
- * and "Add to Sermon Deck" (queues it in the sermonDeck store). Plain
+ * and "Add to Sermon Deck" (queues it in the open sermon's deck). Plain
  * DOM, styled with popover tokens (surface, radius-lg, shadow-2), like
  * the settings popover.
  *
@@ -28,7 +27,7 @@ export function VerseContextMenu({
   y: number;
   onClose: () => void;
 }) {
-  const addToDeck = useSermonDeck((s) => s.addToDeck);
+  const addToDeck = useActiveSermon((s) => s.addToDeck);
   const showToast = useToast((s) => s.showToast);
   const [pos, setPos] = useState({ x, y });
 
@@ -91,9 +90,10 @@ export function VerseContextMenu({
   const onPresentNow = useCallback(() => {
     // Open the fullscreen stage on this one verse only — the sermon deck
     // is untouched (AGENTS.md, Sermon rule #2). The stage renders with
-    // whichever background preset is currently selected.
+    // the open sermon's background preset.
     if (verse) {
-      const background = usePresentationBackground.getState().presetId;
+      const background =
+        useActiveSermon.getState().sermon.backgroundPresetId;
       void presentNow(
         {
           type: "verse",
