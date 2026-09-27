@@ -37,7 +37,7 @@ export interface SearchHit {
 
 /**
  * One verse slide in the sermon deck — an ordered list meant for
- * presenting. Persists the label/text itself (see store/sermonDeck.ts)
+ * presenting. Persists the label/text itself (see store/activeSermon.ts)
  * so presentation needs no extra lookup, and the deck survives app
  * restarts the way settings do.
  */
@@ -81,6 +81,49 @@ export type SermonDeckEntry = VerseSlideItem;
 export type SlideItem = SermonDeckItem;
 
 /**
+ * One outline section for sermon planning (Outline rules
+ * #1–2): a heading plus plain body text — no formatting or images, same
+ * philosophy as custom slides. The outline is reference only: it is
+ * never presented and lives apart from the deck of slides.
+ */
+export interface OutlineSection {
+  /** Stable id (`outline-…`), unique within the sermon. Never reused. */
+  id: string;
+  /** Section heading, e.g. "Point 1" — required, never blank. */
+  heading: string;
+  /** Plain body text — may be empty. */
+  body: string;
+}
+
+/**
+ * A sermon: the top-level saved unit (Sermon library rule #1).
+ * It bundles a title, a date, its outline (planning/reference only, never
+ * presented), its deck (the ordered list of slide items — verses and
+ * custom slides), and its chosen background preset id. Everything that
+ * used to be one global sermon deck/background becomes a property of
+ * "the currently open sermon" instead — see store/activeSermon.ts.
+ */
+export interface Sermon {
+  /** Stable id, unique across sermons (`sermon-…`). Never reused. */
+  id: string;
+  /** Display title, e.g. "Untitled Sermon". */
+  title: string;
+  /** Creation date as an ISO 8601 string (e.g. `new Date().toISOString()`). */
+  date: string;
+  /** Ordered outline sections for planning — never presented. */
+  outline: OutlineSection[];
+  /** Ordered slides for presenting — verse and custom slides mixed freely. */
+  deck: SermonDeckItem[];
+  /**
+   * Selected slide background preset id (see
+   * presentation/backgroundPresets.ts). Resolved with
+   * `getBackgroundPreset`, which falls back to Classic Black for unknown
+   * or missing ids.
+   */
+  backgroundPresetId: string;
+}
+
+/**
  * One slide on the presentation stage — what the Rust backend holds as
  * the current slide state (see src-tauri/src/presentation.rs). The same
  * discriminated union as the sermon deck: verse slides carry the
@@ -102,7 +145,7 @@ export interface StageState {
   /**
    * Selected background preset id (see
    * presentation/backgroundPresets.ts) — set at present time from the
-   * presentationBackgroundStore. The stage resolves it with
+   * open sermon's `backgroundPresetId`. The stage resolves it with
    * `getBackgroundPreset`, which falls back to Classic Black for unknown
    * or missing ids.
    */
