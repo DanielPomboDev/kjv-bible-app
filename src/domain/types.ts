@@ -49,6 +49,12 @@ export interface VerseSlideItem {
   label: string;
   /** Verse text as it appears in the reader. */
   text: string;
+  /**
+   * Optional private presenter notes (AGENTS.md, Presenter notes rule
+   * #1): editable from the deck panel, never rendered on the audience
+   * presentation window.
+   */
+  notes?: string;
 }
 
 /**
@@ -65,6 +71,12 @@ export interface CustomSlideItem {
   title?: string;
   /** Required body text. */
   body: string;
+  /**
+   * Optional private presenter notes (AGENTS.md, Presenter notes rule
+   * #1): editable from the deck panel, never rendered on the audience
+   * presentation window.
+   */
+  notes?: string;
 }
 
 /**
@@ -135,9 +147,11 @@ export type StageSlide = SermonDeckItem;
 
 /**
  * Stage snapshot pushed from Rust (`presentation://slide` event and the
- * initial pull): the slides in order, which one is current, and which
- * background preset to render. A single "Present Now" verse is a
- * one-slide deck, so navigation is inert there.
+ * initial pull): the slides in order, which one is current, which
+ * background preset to render, and the open sermon's outline at present
+ * time. A single "Present Now" verse is a one-slide deck, so navigation
+ * is inert there. The outline (like each slide's `notes`) rides along
+ * for the presenter window only — the audience stage never renders it.
  */
 export interface StageState {
   deck: StageSlide[];
@@ -150,6 +164,14 @@ export interface StageState {
    * or missing ids.
    */
   background: string;
+  /**
+   * The app's light/dark theme at present time (`store/settings.ts`) —
+   * the presenter window applies it so its chrome matches the main app.
+   * The audience stage ignores it (stage tokens only).
+   */
+  theme: "light" | "dark";
+  /** The open sermon's outline sections — presenter reference only. */
+  outline: OutlineSection[];
 }
 
 /**

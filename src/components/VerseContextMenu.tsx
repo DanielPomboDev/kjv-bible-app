@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { presentNow } from "../services/presentation";
+import { usePresentFlow } from "../store/presentFlow";
 import { useActiveSermon } from "../store/activeSermon";
 import { useToast } from "../store/toast";
 import type { ChapterVerse, SermonDeckEntry } from "../domain/types";
@@ -90,22 +90,26 @@ export function VerseContextMenu({
   const onPresentNow = useCallback(() => {
     // Open the fullscreen stage on this one verse only — the sermon deck
     // is untouched (AGENTS.md, Sermon rule #2). The stage renders with
-    // the open sermon's background preset.
+    // the open sermon's background preset, and the presenter window gets
+    // the open sermon's outline for reference. The monitor gate (picker,
+    // or the single-display notes warning) runs before the stage opens —
+    // see store/presentFlow.ts.
     if (verse) {
-      const background =
-        useActiveSermon.getState().sermon.backgroundPresetId;
-      void presentNow(
-        {
+      const sermon = useActiveSermon.getState().sermon;
+      usePresentFlow.getState().requestPresent({
+        kind: "single",
+        slide: {
           type: "verse",
           id: verse.id,
           label: `${verse.bookName} ${verse.chapter}:${verse.verse}`,
           text: verse.text,
         },
-        background,
-      ).catch((e) => showToast(`Presentation failed: ${e}`));
+        background: sermon.backgroundPresetId,
+        outline: [...sermon.outline],
+      });
     }
     onClose();
-  }, [verse, showToast, onClose]);
+  }, [verse, onClose]);
 
   const onAddToDeck = useCallback(() => {
     if (verse) {

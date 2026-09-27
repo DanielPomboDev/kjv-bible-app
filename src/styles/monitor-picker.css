@@ -1,0 +1,169 @@
+/*
+ * MonitorPicker — the pre-present display gate (AGENTS.md, Presenter
+ * notes rules #3–4). A centered modal like the search overlay (scrim +
+ * surface panel, radius-lg, shadow-3); buttons reuse the sermon deck's
+ * Present/secondary styles. Tokens only.
+ */
+
+.monitor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.monitor-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+}
+
+.monitor-panel {
+  position: relative;
+  z-index: 1;
+  width: min(440px, calc(100vw - 2 * var(--space-6)));
+  margin-top: var(--space-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+  animation: monitor-panel-pop var(--motion-base) var(--ease-out);
+}
+
+@keyframes monitor-panel-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.monitor-title {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-body-size);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.monitor-sub {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.monitor-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* One display row: a label wrapping a real radio, so the whole row is
+   clickable and ↑/↓ move between displays natively. */
+.monitor-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    border-color var(--motion-fast) var(--ease-out),
+    background-color var(--motion-fast) var(--ease-out);
+}
+
+.monitor-option:hover {
+  background: var(--hover);
+}
+
+.monitor-option[data-checked] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.monitor-radio {
+  accent-color: var(--accent);
+}
+
+.monitor-option-main {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.monitor-option-name {
+  font-family: var(--font-ui);
+  font-size: var(--text-body-size);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.monitor-option-size {
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* "Primary" marker: same chip language as the deck's "Custom" marker. */
+.monitor-badge {
+  flex-shrink: 0;
+  padding: var(--space-1) var(--space-2);
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-size: var(--text-kbd-size);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+
+.monitor-option[data-checked] .monitor-badge {
+  background: var(--surface);
+}
+
+/* Single-display warning (AGENTS.md, Presenter notes rule #4): tinted
+   so it reads as a warning, not body copy. */
+.monitor-warning {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+  font-size: var(--text-body-size);
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.monitor-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.monitor-option:focus-within,
+.monitor-actions button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .monitor-panel {
+    animation: none;
+  }
+}

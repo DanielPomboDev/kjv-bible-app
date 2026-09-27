@@ -1,31 +1,67 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { SermonDeckItem, StageSlide, StageState } from "../domain/types";
+import type {
+  OutlineSection,
+  SermonDeckItem,
+  StageSlide,
+  StageState,
+} from "../domain/types";
+import type { MonitorTarget } from "../presentation/monitors";
+import type { Theme } from "../store/settings";
 
 /**
  * Bridge to the presentation stage, which lives in a separate window
  * owned by the Rust side (src-tauri/src/presentation.rs): the main
  * window pushes what to present, the stage pulls its current slide and
- * moves through the deck with →/Space/←.
+ * moves through the deck with →/Space/←. The presenter window shares
+ * the same push/pull — the backend owns the index, so both windows stay
+ * in sync (AGENTS.md, Presenter notes rule #6).
  */
 
 /** Present the whole sermon deck, starting at the first slide. */
-export function presentDeck(
-  deck: readonly SermonDeckItem[],
-  background: string,
-): Promise<void> {
+export function presentDeck(args: {
+  deck: readonly SermonDeckItem[];
+  background: string;
+  monitor?: MonitorTarget;
+  outline: readonly OutlineSection[];
+  theme: Theme;
+}): Promise<void> {
   // Verse and custom slides share the frontend's discriminated union
   // with the backend's tagged Slide enum, so the deck travels untouched
-  // and both step through in order by index.
-  return invoke("present_deck_command", { deck, index: 0, background });
+  // and both step through in order by index. `monitor` moves the stage
+  // window onto the picked display before it goes fullscreen; `outline`
+  // is reference material for the presenter window only, and `theme`
+  // styles the presenter chrome to match the main app.
+  const { deck, background, monitor, outline, theme } = args;
+  return invoke("present_deck_command", {
+    deck,
+    index: 0,
+    background,
+    monitor,
+    outline,
+    theme,
+  });
 }
 
 /**
  * Present one verse immediately ("Present Now") — exactly that verse,
  * regardless of what's queued in the deck.
  */
-export function presentNow(slide: StageSlide, background: string): Promise<void> {
-  return invoke("present_now_command", { slide, background });
+export function presentNow(args: {
+  slide: StageSlide;
+  background: string;
+  monitor?: MonitorTarget;
+  outline: readonly OutlineSection[];
+  theme: Theme;
+}): Promise<void> {
+  const { slide, background, monitor, outline, theme } = args;
+  return invoke("present_now_command", {
+    slide,
+    background,
+    monitor,
+    outline,
+    theme,
+  });
 }
 
 /**

@@ -36,6 +36,18 @@ if (windowLabel() === "presentation") {
       </React.StrictMode>,
     );
   });
+} else if (windowLabel() === "presenter") {
+  void Promise.all([
+    import("./styles/tokens.css"),
+    import("./styles/presenter.css"),
+    import("./components/PresenterWindow"),
+  ]).then(([, , { PresenterWindow }]) => {
+    root.render(
+      <React.StrictMode>
+        <PresenterWindow />
+      </React.StrictMode>,
+    );
+  });
 } else {
   void import("./App").then(({ default: App }) => {
     root.render(

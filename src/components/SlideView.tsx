@@ -8,13 +8,23 @@ import { fitText } from "./slideFit";
  * DESIGN-SYSTEM.md, "Presentation window"), the reference smaller and
  * dimmer near the bottom.
  *
+ * The prop carries content + identity only — `notes` is deliberately
+ * absent from the type (AGENTS.md, Presenter notes rule #2: the stage
+ * must NEVER render notes, under any circumstance), so referencing it
+ * here is a compile error, not a code-review catch. Same for the
+ * outline, which never reaches this component at all.
+ *
  * The verse auto-fits its box (see slideFit): it starts at
  * --stage-text-size and shrinks toward --stage-text-min-size until it
  * fits. Refit on slide change, box resize, and webfont arrival. The
  * reference is outside the fitted box, so it sits in the same place
  * every slide.
  */
-export function SlideView({ slide }: { slide: VerseSlideItem | null }) {
+export function SlideView({
+  slide,
+}: {
+  slide: Pick<VerseSlideItem, "id" | "text" | "label"> | null;
+}) {
   const boxRef = useRef<HTMLQuoteElement | null>(null);
   const textRef = useRef<HTMLSpanElement | null>(null);
 

@@ -5,14 +5,93 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { presentDeck } from "../services/presentation";
+import { usePresentFlow } from "../store/presentFlow";
 import { useActiveSermon } from "../store/activeSermon";
-import type { CustomSlideItem } from "../domain/types";
+import type { CustomSlideItem, SermonDeckItem } from "../domain/types";
 import { useToast } from "../store/toast";
 import { BackgroundPicker } from "../presentation/BackgroundPicker";
 import { CustomSlideEditor } from "../presentation/CustomSlideEditor";
 import { OutlineTab } from "../sermon/OutlineTab";
 import { ArrowDownIcon, ArrowUpIcon, CloseIcon, DeckIcon } from "./icons";
+
+/**
+ * Private presenter notes for one slide (AGENTS.md, Presenter notes rule
+ * #1): a small toggle under the slide entry expanding a plain textarea.
+ * Notes save on blur (or when collapsing the field) and clear when left
+ * blank — they are stored on the slide but never rendered on the
+ * audience presentation window.
+ */
+function SlideNotesField({
+  item,
+  label,
+}: {
+  item: SermonDeckItem;
+  label: string;
+}) {
+  const setSlideNotes = useActiveSermon((s) => s.setSlideNotes);
+  const notes = item.notes ?? "";
+  const [expanded, setExpanded] = useState(false);
+  const [draft, setDraft] = useState(notes);
+
+  // Follow external changes (sermon switch, or another edit of the
+  // same slide) so the field never shows a stale value.
+  useEffect(() => {
+    setDraft(notes);
+  }, [notes, item.id]);
+
+  const save = useCallback(
+    (value: string) => setSlideNotes(item.id, value),
+    [setSlideNotes, item.id],
+  );
+
+  const fieldId = `slide-notes-${item.type}-${item.id}`;
+  const hasNotes = notes.length > 0;
+
+  return (
+    <div className="sermon-deck-notes">
+      <button
+        type="button"
+        className="sermon-deck-notes-toggle"
+        aria-expanded={expanded}
+        aria-controls={fieldId}
+        onClick={() => {
+          // Collapsing with unsaved edits saves first so nothing typed
+          // is lost by toggling the field shut.
+          if (expanded && draft !== notes) save(draft);
+          setExpanded((e) => !e);
+        }}
+      >
+        {expanded ? "Hide notes" : hasNotes ? "Edit notes" : "Add notes"}
+        {hasNotes && !expanded && (
+          <span className="sermon-deck-notes-dot" aria-hidden="true" />
+        )}
+      </button>
+      {expanded && (
+        <textarea
+          id={fieldId}
+          className="sermon-deck-notes-input"
+          value={draft}
+          rows={2}
+          placeholder="Private presenter notes — never shown on stage"
+          aria-label={`Presenter notes for ${label}`}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => {
+            if (draft !== notes) save(draft);
+          }}
+          onKeyDown={(e) => {
+            // Escape ends notes editing without closing the whole
+            // panel (the panel also listens for Escape on window).
+            if (e.key === "Escape") {
+              e.stopPropagation();
+              if (draft !== notes) save(draft);
+              setExpanded(false);
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}
 
 /**
  * The sermon panel: a stack button in the TopBar opening a popover with
@@ -118,14 +197,20 @@ export function SermonDeckPanel() {
   const onPresent = useCallback(() => {
     if (deck.length > 0) {
       setOpen(false);
-      // Snapshot the open sermon's background so the stage renders the
-      // new look picked just before presenting.
-      const background = useActiveSermon.getState().sermon.backgroundPresetId;
-      void presentDeck(deck, background).catch((e) =>
-        showToast(`Presentation failed: ${e}`),
-      );
+      // Snapshot the open sermon's background + outline so the stage
+      // renders the new look picked just before presenting and the
+      // presenter window has its reference material. The monitor gate
+      // (picker, or the single-display notes warning) runs before the
+      // stage opens — see store/presentFlow.ts.
+      const sermon = useActiveSermon.getState().sermon;
+      usePresentFlow.getState().requestPresent({
+        kind: "deck",
+        deck: [...deck],
+        background: sermon.backgroundPresetId,
+        outline: [...sermon.outline],
+      });
     }
-  }, [deck, showToast]);
+  }, [deck]);
 
   // The custom slide under edit, if it is still in the deck (it could
   // have been removed while the editor was open — saving then no-ops
@@ -349,6 +434,7 @@ export function SermonDeckPanel() {
                     <span className="sermon-deck-position" aria-hidden="true">
                       {index + 1}
                     </span>
+                    <div className="sermon-deck-main">
                     {item.type === "custom" ? (
                       // Custom rows are clickable (keyboard: Enter/Space):
                       // they reopen the editor pre-filled for in-place
@@ -367,6 +453,8 @@ export function SermonDeckPanel() {
                     ) : (
                       <span className="sermon-deck-entry">{entryInner}</span>
                     )}
+                    <SlideNotesField item={item} label={ref} />
+                    </div>
                     <span className="sermon-deck-actions">
                       <button
                         type="button"
