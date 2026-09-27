@@ -1,0 +1,235 @@
+/*
+ * SermonDeckPanel — uses only tokens from tokens.css.
+ */
+
+.sermon-deck {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Icon button, matching the settings gear: circular hover ring. */
+.sermon-deck-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-8);
+  height: var(--space-8);
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--text-body-size);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color var(--motion-fast) var(--ease-out),
+    background-color var(--motion-fast) var(--ease-out);
+}
+
+.sermon-deck-toggle:hover {
+  color: var(--accent);
+  background: var(--hover);
+}
+
+/* Small count chip docked to the button's corner. */
+.sermon-deck-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 14px;
+  padding: 0 var(--space-1);
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-size: var(--text-kbd-size);
+  font-weight: 600;
+  line-height: 14px;
+  color: var(--accent-contrast);
+  text-align: center;
+}
+
+.sermon-deck-toggle:focus-visible,
+.sermon-deck-clear:focus-visible,
+.sermon-deck-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+/* Popover, mirroring the settings popover (surface, radius-lg, shadow-2). */
+.sermon-deck-panel {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 150;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+  transform-origin: top right;
+  animation: sermon-deck-pop var(--motion-base) var(--ease-out);
+}
+
+@keyframes sermon-deck-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.sermon-deck-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.sermon-deck-title {
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.sermon-deck-count {
+  flex: 1;
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-secondary);
+}
+
+.sermon-deck-clear {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--motion-fast) var(--ease-out);
+}
+
+.sermon-deck-clear:hover {
+  color: var(--accent);
+}
+
+.sermon-deck-empty {
+  margin: 0;
+  padding: var(--space-4);
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-secondary);
+}
+
+.sermon-deck-list {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-1) 0;
+  max-height: min(420px, calc(100vh - 160px));
+  overflow-y: auto;
+}
+
+.sermon-deck-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+}
+
+.sermon-deck-row:hover {
+  background: var(--hover);
+}
+
+.sermon-deck-position {
+  min-width: var(--space-4);
+  padding-top: 2px;
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-secondary);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sermon-deck-entry {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.sermon-deck-ref {
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.sermon-deck-preview {
+  font-family: var(--font-reading);
+  font-size: var(--text-verse-number-size);
+  line-height: 1.7;
+  color: var(--text-primary);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.sermon-deck-actions {
+  display: flex;
+  gap: var(--space-1);
+  padding-top: var(--space-1);
+}
+
+.sermon-deck-btn {
+  width: var(--space-6);
+  height: var(--space-6);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color var(--motion-fast) var(--ease-out),
+    background-color var(--motion-fast) var(--ease-out);
+}
+
+.sermon-deck-btn:hover:not(:disabled) {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.sermon-deck-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.sermon-deck-btn-remove:hover:not(:disabled) {
+  color: var(--accent-contrast);
+  background: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sermon-deck-panel {
+    animation: none;
+  }
+}

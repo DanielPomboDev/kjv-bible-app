@@ -18,6 +18,7 @@ import "./styles/search.css";
 import "./styles/copy-toolbar.css";
 import "./styles/settings.css";
 import "./styles/context-menu.css";
+import "./styles/sermon-deck.css";
 
 function App() {
   const bookId = useNavigation((s) => s.bookId);

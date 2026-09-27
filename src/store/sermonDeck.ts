@@ -24,6 +24,16 @@ interface SermonDeckState {
    * nothing) if the verse is already in the deck.
    */
   addToDeck: (entry: SermonDeckEntry) => boolean;
+  /** Remove one verse from the deck (no-op if the id isn't queued). */
+  removeFromDeck: (verseId: number) => void;
+  /**
+   * Move the verse at one 0-based index to another 0-based index;
+   * everything in between shifts by one. No-op when either index is out
+   * of range or both are equal.
+   */
+  moveInDeck: (fromIndex: number, toIndex: number) => void;
+  /** Empty the deck entirely. */
+  clearDeck: () => void;
 }
 
 function isEntry(value: unknown): value is SermonDeckEntry {
@@ -60,6 +70,37 @@ export const useSermonDeck = create<SermonDeckState>()((set, get) => ({
     persist(next);
     set({ deck: next });
     return true;
+  },
+
+  removeFromDeck: (verseId) => {
+    const next = get().deck.filter((e) => e.id !== verseId);
+    if (next.length === get().deck.length) return;
+    persist(next);
+    set({ deck: next });
+  },
+
+  moveInDeck: (fromIndex, toIndex) => {
+    const deck = get().deck;
+    if (
+      fromIndex === toIndex ||
+      fromIndex < 0 ||
+      fromIndex >= deck.length ||
+      toIndex < 0 ||
+      toIndex >= deck.length
+    ) {
+      return;
+    }
+    const next = [...deck];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    persist(next);
+    set({ deck: next });
+  },
+
+  clearDeck: () => {
+    if (get().deck.length === 0) return;
+    persist([]);
+    set({ deck: [] });
   },
 }));
 
