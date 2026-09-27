@@ -7,6 +7,7 @@ import { TopBar } from "./components/TopBar";
 import { SearchOverlay } from "./components/SearchOverlay";
 import { CopyToolbar } from "./components/CopyToolbar";
 import { VerseContextMenu } from "./components/VerseContextMenu";
+import { MonitorPicker } from "./presentation/MonitorPicker";
 import { Toast } from "./components/Toast";
 import { useNavigation } from "./store/navigation";
 import { useSearch } from "./store/search";
@@ -22,6 +23,7 @@ import "./styles/sermon-deck.css";
 import "./styles/sermon-library.css";
 import "./styles/outline.css";
 import "./styles/background-picker.css";
+import "./styles/monitor-picker.css";
 
 function App() {
   const bookId = useNavigation((s) => s.bookId);
@@ -112,6 +114,7 @@ function App() {
       <SearchOverlay />
       <CopyToolbar />
       <VerseContextMenu verse={menuVerse} x={menuPos.x} y={menuPos.y} onClose={closeMenu} />
+      <MonitorPicker />
       <Toast />
     </div>
   );

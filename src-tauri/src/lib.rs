@@ -11,9 +11,10 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(presentation::PresentationState::default())
         .setup(|app| {
-            // Pre-warm the presentation stage hidden; Present only ever
-            // shows it (building a window on click hangs on Windows).
+            // Pre-warm both extra windows hidden; the click path must
+            // never build a window (building on click hangs on Windows).
             presentation::create_stage_window(app.handle());
+            presentation::create_presenter_window(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -22,6 +23,7 @@ pub fn run() {
             db::get_verses_by_ids,
             search::search_bible,
             presentation::presentation_state,
+            presentation::list_monitors,
             presentation::present_deck_command,
             presentation::present_now_command,
             presentation::presentation_move,
@@ -33,6 +35,35 @@ pub fn run() {
             if window.label() == "presentation" {
                 if let tauri::WindowEvent::Destroyed = event {
                     if let Some(main) = window.app_handle().get_webview_window("main") {
+                        let _ = main.set_focus();
+                    }
+                }
+            }
+            // The presenter's × is a full exit, not a solo hide: closing
+            // either window closes both, so a fullscreen stage is never
+            // left orphaned with its control panel gone. The pair stays
+            // alive hidden so the next Present reuses it (same as Esc —
+            // see `presentation_exit`).
+            if window.label() == "presenter" {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    let app = window.app_handle();
+                    if let Some(stage) = app.get_webview_window("presentation") {
+                        let _ = stage.hide();
+                    }
+                    let _ = window.hide();
+                    if let Some(main) = app.get_webview_window("main") {
+                        let _ = main.set_focus();
+                    }
+                    api.prevent_close();
+                }
+                // Crash/kill guard: if the presenter dies any other way,
+                // don't leave its fullscreen stage behind either.
+                if let tauri::WindowEvent::Destroyed = event {
+                    let app = window.app_handle();
+                    if let Some(stage) = app.get_webview_window("presentation") {
+                        let _ = stage.hide();
+                    }
+                    if let Some(main) = app.get_webview_window("main") {
                         let _ = main.set_focus();
                     }
                 }

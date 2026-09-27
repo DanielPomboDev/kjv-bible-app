@@ -8,13 +8,23 @@ import { fitText } from "./slideFit";
  * below it — rendered in the same stage tokens and background preset as
  * verse slides, never the app's light/dark theme.
  *
+ * The prop carries content + identity only — `notes` is deliberately
+ * absent from the type (Presenter notes rule #2: the stage
+ * must NEVER render notes, under any circumstance), so referencing it
+ * here is a compile error, not a code-review catch. Same for the
+ * outline, which never reaches this component at all.
+ *
  * The body auto-fits its box exactly like a verse (see slideFit); the
  * title keeps a fixed size outside the fitted box so it sits in the
  * same place every slide. A title-less slide shows just the centered
  * body. Keyboard navigation is owned by PresentationWindow and is
  * identical for both slide types.
  */
-export function CustomSlideView({ slide }: { slide: CustomSlideItem | null }) {
+export function CustomSlideView({
+  slide,
+}: {
+  slide: Pick<CustomSlideItem, "id" | "title" | "body"> | null;
+}) {
   const boxRef = useRef<HTMLQuoteElement | null>(null);
   const textRef = useRef<HTMLSpanElement | null>(null);
 

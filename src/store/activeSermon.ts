@@ -53,6 +53,12 @@ interface ActiveSermonState {
   ) => boolean;
   /** Remove one slide from the open sermon's deck (no-op if missing). */
   removeFromDeck: (id: number | string) => void;
+  /**
+   * Set (or clear) the private presenter notes on one slide (project notes,
+   * Presenter notes rule #1): verse or custom, found by id. Blank text
+   * clears the notes; anything else is stored trimmed. No-op if missing.
+   */
+  setSlideNotes: (id: number | string, notes: string) => void;
   /** Move the slide at one 0-based index to another; no-op if invalid. */
   moveInDeck: (fromIndex: number, toIndex: number) => void;
   /** Empty the open sermon's deck entirely. */
@@ -149,6 +155,25 @@ export const useActiveSermon = create<ActiveSermonState>()((set, get) => {
       commit({ ...sermon, deck });
     },
 
+    setSlideNotes: (id, notes) => {
+      const clean = notes.trim();
+      const { sermon } = get();
+      const index = sermon.deck.findIndex((e) => e.id === id);
+      if (index === -1) return;
+      const current = sermon.deck[index];
+      const currentNotes = current.notes ?? "";
+      if (currentNotes === clean) return;
+      const deck = [...sermon.deck];
+      deck[index] =
+        clean.length === 0
+          ? ((): SermonDeckItem => {
+              const { notes: _dropped, ...rest } = current;
+              return rest as SermonDeckItem;
+            })()
+          : { ...current, notes: clean };
+      commit({ ...sermon, deck });
+    },
+
     updateCustomSlide: (id, title, body) => {
       const cleanBody = body.trim();
       if (cleanBody.length === 0) return false;
@@ -158,11 +183,14 @@ export const useActiveSermon = create<ActiveSermonState>()((set, get) => {
       );
       if (index === -1) return false;
       const deck = [...sermon.deck];
+      const previous = deck[index];
       deck[index] = {
         type: "custom",
         id,
         ...(title !== undefined ? { title } : {}),
         body: cleanBody,
+        // Notes belong to the slide, not the title/body edit — keep them.
+        ...(previous.notes !== undefined ? { notes: previous.notes } : {}),
       };
       commit({ ...sermon, deck });
       return true;
