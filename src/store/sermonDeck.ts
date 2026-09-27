@@ -1,10 +1,16 @@
 import { create } from "zustand";
-import type { SermonDeckEntry } from "../domain/types";
+import type {
+  CustomSlideItem,
+  SermonDeckItem,
+  VerseSlideItem,
+} from "../domain/types";
 
 /**
- * The sermon deck: an ordered list of queued verses for presenting
- * (fullscreen sermon mode comes in a later step). Deliberately separate
- * from store/selection.ts — selection serves clipboard copy and is
+ * The sermon deck: a single ordered list of slide items queued for
+ * presenting (fullscreen sermon mode comes in a later step). Each item
+ * is either a verse slide or a custom slide (Custom slide
+ * rule #1) — one list, never two. Deliberately separate from
+ * store/selection.ts — selection serves clipboard copy and is
  * transient, while the deck is a curated, ordered, persisted list; the
  * two can hold different verses at once (Sermon rules #1 & #5).
  *
@@ -17,17 +23,17 @@ import type { SermonDeckEntry } from "../domain/types";
 const STORAGE_KEY = "bible.sermonDeck";
 
 interface SermonDeckState {
-  /** Queued verses in presentation order — the deck IS this order. */
-  readonly deck: readonly SermonDeckEntry[];
+  /** Queued slides in presentation order — the deck IS this order. */
+  readonly deck: readonly SermonDeckItem[];
   /**
-   * Queue a verse, keeping insertion order. Returns false (and changes
-   * nothing) if the verse is already in the deck.
+   * Queue a slide, keeping insertion order. Returns false (and changes
+   * nothing) if an item with the same id is already in the deck.
    */
-  addToDeck: (entry: SermonDeckEntry) => boolean;
-  /** Remove one verse from the deck (no-op if the id isn't queued). */
-  removeFromDeck: (verseId: number) => void;
+  addToDeck: (entry: SermonDeckItem) => boolean;
+  /** Remove one slide from the deck (no-op if the id isn't queued). */
+  removeFromDeck: (id: number | string) => void;
   /**
-   * Move the verse at one 0-based index to another 0-based index;
+   * Move the slide at one 0-based index to another 0-based index;
    * everything in between shifts by one. No-op when either index is out
    * of range or both are equal.
    */
@@ -36,9 +42,12 @@ interface SermonDeckState {
   clearDeck: () => void;
 }
 
-function isEntry(value: unknown): value is SermonDeckEntry {
+function isVerseItem(value: unknown): value is VerseSlideItem {
   if (typeof value !== "object" || value === null) return false;
   const entry = value as Record<string, unknown>;
+  // `type` is optional here so decks persisted before the verse/custom
+  // union still load — a typeless entry is a verse by definition.
+  if (entry.type !== undefined && entry.type !== "verse") return false;
   return (
     typeof entry.id === "number" &&
     typeof entry.label === "string" &&
@@ -46,14 +55,49 @@ function isEntry(value: unknown): value is SermonDeckEntry {
   );
 }
 
-function load(): SermonDeckEntry[] {
+function isCustomItem(value: unknown): value is CustomSlideItem {
+  if (typeof value !== "object" || value === null) return false;
+  const entry = value as Record<string, unknown>;
+  if (entry.type !== "custom") return false;
+  return (
+    typeof entry.id === "string" &&
+    (entry.title === undefined || typeof entry.title === "string") &&
+    typeof entry.body === "string"
+  );
+}
+
+/**
+ * Normalize one persisted value to a deck item, or null when malformed.
+ * Legacy verse entries (no `type` field) become `{ type: "verse", … }`
+ * so old decks survive the union migration unchanged.
+ */
+function normalize(value: unknown): SermonDeckItem | null {
+  if (isCustomItem(value)) {
+    const { id, title, body } = value;
+    return title === undefined
+      ? { type: "custom", id, body }
+      : { type: "custom", id, title, body };
+  }
+  if (isVerseItem(value)) {
+    const { id, label, text } = value;
+    return { type: "verse", id, label, text };
+  }
+  return null;
+}
+
+function load(): SermonDeckItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     // Drop anything malformed so a bad write can't break the app.
-    return parsed.filter(isEntry);
+    const deck: SermonDeckItem[] = [];
+    for (const value of parsed) {
+      const item = normalize(value);
+      if (item !== null) deck.push(item);
+    }
+    return deck;
   } catch {
     // Corrupted or unavailable storage: fall through to an empty deck.
     return [];
@@ -72,8 +116,8 @@ export const useSermonDeck = create<SermonDeckState>()((set, get) => ({
     return true;
   },
 
-  removeFromDeck: (verseId) => {
-    const next = get().deck.filter((e) => e.id !== verseId);
+  removeFromDeck: (id) => {
+    const next = get().deck.filter((e) => e.id !== id);
     if (next.length === get().deck.length) return;
     persist(next);
     set({ deck: next });
@@ -104,7 +148,7 @@ export const useSermonDeck = create<SermonDeckState>()((set, get) => ({
   },
 }));
 
-function persist(deck: readonly SermonDeckEntry[]): void {
+function persist(deck: readonly SermonDeckItem[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(deck));
   } catch {

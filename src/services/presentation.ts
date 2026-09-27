@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { SermonDeckEntry, StageSlide, StageState } from "../domain/types";
+import type { SermonDeckItem, StageSlide, StageState } from "../domain/types";
 
 /**
  * Bridge to the presentation stage, which lives in a separate window
@@ -9,12 +9,19 @@ import type { SermonDeckEntry, StageSlide, StageState } from "../domain/types";
  * moves through the deck with →/Space/←.
  */
 
-/** Present the whole sermon deck, starting at the first verse. */
+/** Present the whole sermon deck, starting at the first slide. */
 export function presentDeck(
-  deck: readonly SermonDeckEntry[],
+  deck: readonly SermonDeckItem[],
   background: string,
 ): Promise<void> {
-  return invoke("present_deck_command", { deck, index: 0, background });
+  // The stage backend is verse-only for now (custom-slide presenting
+  // arrives with the editor step): queue the verse slides in deck order,
+  // stripping the discriminant so the wire payload is exactly what the
+  // verse-only deck always sent.
+  const verses = deck
+    .filter((item) => item.type === "verse")
+    .map(({ id, label, text }) => ({ id, label, text }));
+  return invoke("present_deck_command", { deck: verses, index: 0, background });
 }
 
 /**

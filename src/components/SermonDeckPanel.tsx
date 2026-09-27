@@ -157,45 +157,58 @@ export function SermonDeckPanel() {
             </p>
           ) : (
             <ol className="sermon-deck-list">
-              {deck.map((entry, index) => (
-                <li key={entry.id} className="sermon-deck-row">
-                  <span className="sermon-deck-position" aria-hidden="true">
-                    {index + 1}
-                  </span>
-                  <span className="sermon-deck-entry">
-                    <span className="sermon-deck-ref">{entry.label}</span>
-                    <span className="sermon-deck-preview">{entry.text}</span>
-                  </span>
-                  <span className="sermon-deck-actions">
-                    <button
-                      type="button"
-                      className="sermon-deck-btn"
-                      aria-label={`Move ${entry.label} up`}
-                      disabled={index === 0}
-                      onClick={() => moveUp(index)}
-                    >
-                      <ArrowUpIcon />
-                    </button>
-                    <button
-                      type="button"
-                      className="sermon-deck-btn"
-                      aria-label={`Move ${entry.label} down`}
-                      disabled={index === count - 1}
-                      onClick={() => moveDown(index)}
-                    >
-                      <ArrowDownIcon />
-                    </button>
-                    <button
-                      type="button"
-                      className="sermon-deck-btn sermon-deck-btn-remove"
-                      aria-label={`Remove ${entry.label} from the deck`}
-                      onClick={() => removeFromDeck(entry.id)}
-                    >
-                      <CloseIcon />
-                    </button>
-                  </span>
-                </li>
-              ))}
+              {deck.map((item, index) => {
+                // Verse slides render exactly as before; custom slides
+                // (no editor yet, so none exist at runtime) show their
+                // title/body through the same row layout.
+                const ref =
+                  item.type === "verse"
+                    ? item.label
+                    : item.title || "Custom slide";
+                const preview = item.type === "verse" ? item.text : item.body;
+                return (
+                  <li
+                    key={`${item.type}:${item.id}`}
+                    className="sermon-deck-row"
+                  >
+                    <span className="sermon-deck-position" aria-hidden="true">
+                      {index + 1}
+                    </span>
+                    <span className="sermon-deck-entry">
+                      <span className="sermon-deck-ref">{ref}</span>
+                      <span className="sermon-deck-preview">{preview}</span>
+                    </span>
+                    <span className="sermon-deck-actions">
+                      <button
+                        type="button"
+                        className="sermon-deck-btn"
+                        aria-label={`Move ${ref} up`}
+                        disabled={index === 0}
+                        onClick={() => moveUp(index)}
+                      >
+                        <ArrowUpIcon />
+                      </button>
+                      <button
+                        type="button"
+                        className="sermon-deck-btn"
+                        aria-label={`Move ${ref} down`}
+                        disabled={index === count - 1}
+                        onClick={() => moveDown(index)}
+                      >
+                        <ArrowDownIcon />
+                      </button>
+                      <button
+                        type="button"
+                        className="sermon-deck-btn sermon-deck-btn-remove"
+                        aria-label={`Remove ${ref} from the deck`}
+                        onClick={() => removeFromDeck(item.id)}
+                      >
+                        <CloseIcon />
+                      </button>
+                    </span>
+                  </li>
+                );
+              })}
             </ol>
           )}
         </div>
