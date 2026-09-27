@@ -38,7 +38,10 @@
 }
 
 /* The verse: fills the slide above the reference, content centered both
-   axes. flex: 1 + inner flexing centers 1-line and 6-line verses alike. */
+   axes. flex: 1 + inner flexing centers 1-line and 6-line verses alike.
+   The actual size is set by SlideView's auto-fit (between
+   --stage-text-size and --stage-text-min-size); the span is what the
+   fitter measures, capped so an unbroken string can't push past the box. */
 .stage-slide-text {
   flex: 1;
   min-height: 0;
@@ -53,6 +56,10 @@
   text-align: center;
   text-wrap: balance;
   overflow-wrap: break-word;
+}
+
+.stage-slide-text > span {
+  max-width: 100%;
 }
 
 /* The reference: smaller, dimmer, pinned to the bottom of the slide. */
