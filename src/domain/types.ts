@@ -81,15 +81,14 @@ export type SermonDeckEntry = VerseSlideItem;
 export type SlideItem = SermonDeckItem;
 
 /**
- * One verse on the presentation stage — what the Rust backend holds as
- * the current slide state (see src-tauri/src/presentation.rs). Same shape
- * as SermonDeckEntry; the label is the ready-made reference.
+ * One slide on the presentation stage — what the Rust backend holds as
+ * the current slide state (see src-tauri/src/presentation.rs). The same
+ * discriminated union as the sermon deck: verse slides carry the
+ * ready-made reference as `label`, custom slides their `title`/`body`.
+ * The deck travels to the backend untouched, so both step through
+ * identically by index.
  */
-export interface StageSlide {
-  id: number;
-  label: string;
-  text: string;
-}
+export type StageSlide = SermonDeckItem;
 
 /**
  * Stage snapshot pushed from Rust (`presentation://slide` event and the

@@ -66,6 +66,71 @@
   outline-offset: -2px;
 }
 
+/* Custom slide editor: a plain two-field form (title + body) with
+   Save/Cancel, sitting between the header and the deck list. Buttons
+   reuse the Present/Background styles; inputs use surface tokens. */
+.custom-slide-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.custom-slide-label {
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.custom-slide-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-2) var(--space-3);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+  font-size: var(--text-body-size);
+  color: var(--text-primary);
+}
+
+.custom-slide-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.custom-slide-input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -1px;
+}
+
+.custom-slide-body {
+  resize: vertical;
+  font-family: var(--font-reading);
+  line-height: 1.7;
+}
+
+.custom-slide-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.custom-slide-hint {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-secondary);
+}
+
+.sermon-deck-present:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 /* Popover, mirroring the settings popover (surface, radius-lg, shadow-2). */
 .sermon-deck-panel {
   position: absolute;
@@ -255,10 +320,52 @@
 }
 
 .sermon-deck-ref {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-family: var(--font-ui);
   font-size: var(--text-verse-number-size);
   font-weight: 600;
   color: var(--accent);
+}
+
+/* "Custom" marker on custom-slide rows: a small uppercase chip in
+   accent tones (same language as the Esc kbd chip), so custom slides
+   are distinguishable from verse references at a glance. Verse rows
+   need no marker — the reference itself (e.g. "John 3:16") says it. */
+.sermon-deck-kind {
+  flex-shrink: 0;
+  padding: var(--space-1) var(--space-2);
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-size: var(--text-kbd-size);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+
+/* Custom rows are buttons that reopen the editor: reset the button
+   chrome but keep the entry layout, with a pointer cursor and an
+   underline on the title to signal clickability. */
+button.sermon-deck-entry {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.sermon-deck-edit:hover .sermon-deck-ref {
+  text-decoration: underline;
+}
+
+.sermon-deck-edit:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
 }
 
 .sermon-deck-preview {

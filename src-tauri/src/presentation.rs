@@ -2,15 +2,28 @@ use serde::{Deserialize, Serialize};
 use std::sync::{Mutex, MutexGuard};
 use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 
-/// One queued verse as presented on the stage. Mirrors
-/// `SermonDeckEntry` in `src/domain/types.ts` — its `label` is a
-/// ready-made slide reference ("John 3:16").
+/// One slide on the stage, verse or custom. Mirrors `SermonDeckItem`
+/// in `src/domain/types.ts` — the deck travels to the backend untouched.
+/// Externally tagged on `"type"` so the JSON is exactly the frontend
+/// shape: `{"type":"verse","id":…,"label":…,"text":…}` or
+/// `{"type":"custom","id":…,"title":…,"body":…}`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Slide {
-    pub id: i64,
-    pub label: String,
-    pub text: String,
+#[serde(tag = "type")]
+pub enum Slide {
+    /// A Bible verse slide: `id` is the canonical verse id
+    /// (`verses.id`) and `label` the ready-made reference ("John 3:16").
+    #[serde(rename = "verse")]
+    Verse { id: i64, label: String, text: String },
+    /// A custom sermon slide (AGENTS.md, Custom slide rules): string `id`
+    /// in its own namespace (never collides with verse ids), optional
+    /// `title`, required `body`.
+    #[serde(rename = "custom")]
+    Custom {
+        id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        title: Option<String>,
+        body: String,
+    },
 }
 
 /// Preset id the stage falls back to when the frontend sends none.
@@ -26,7 +39,9 @@ pub struct PresentationInner {
     /// Slides in presentation order. A single "Present Now" verse is a
     /// one-slide deck, so ← is naturally inert by bounds (→ past the
     /// single slide closes the stage — see the frontend key handler); it
-    /// deliberately ignores the sermon deck — AGENTS.md rule #2.
+    /// deliberately ignores the sermon deck — AGENTS.md rule #2. Verse
+    /// and custom slides mix freely here; navigation is index-based, so
+    /// both step through identically.
     pub deck: Vec<Slide>,
     /// 0-based index into `deck`.
     pub index: usize,
@@ -313,24 +328,109 @@ pub fn presentation_exit(app: tauri::AppHandle) {
 mod tests {
     use super::*;
 
-    fn slide(id: i64, label: &str, text: &str) -> Slide {
-        Slide {
+    fn verse_slide(id: i64, label: &str, text: &str) -> Slide {
+        Slide::Verse {
             id,
             label: label.into(),
             text: text.into(),
         }
     }
 
+    fn custom_slide(id: &str, title: Option<&str>, body: &str) -> Slide {
+        Slide::Custom {
+            id: id.into(),
+            title: title.map(str::to_string),
+            body: body.into(),
+        }
+    }
+
     #[test]
-    fn slide_roundtrips_camel_case() {
-        let slide = slide(7, "John 3:16", "For God so loved…");
+    fn verse_slide_roundtrips_with_type_tag() {
+        let slide = verse_slide(7, "John 3:16", "For God so loved…");
         let json = serde_json::to_string(&slide).expect("serialize");
-        assert!(json.contains("\"id\":7"));
-        assert!(json.contains("\"label\":\"John 3:16\""));
+        assert_eq!(
+            json,
+            r#"{"type":"verse","id":7,"label":"John 3:16","text":"For God so loved…"}"#
+        );
         let back: Slide = serde_json::from_str(&json).expect("deserialize");
-        assert_eq!(back.id, 7);
-        assert_eq!(back.label, "John 3:16");
-        assert_eq!(back.text, "For God so loved…");
+        assert!(matches!(back, Slide::Verse { id: 7, .. }));
+    }
+
+    #[test]
+    fn custom_slide_roundtrips_with_type_tag() {
+        let slide = custom_slide("custom-abc", Some("Grace"), "Amazing grace…");
+        let json = serde_json::to_string(&slide).expect("serialize");
+        assert_eq!(
+            json,
+            r#"{"type":"custom","id":"custom-abc","title":"Grace","body":"Amazing grace…"}"#
+        );
+        let back: Slide = serde_json::from_str(&json).expect("deserialize");
+        assert!(matches!(back, Slide::Custom { .. }));
+    }
+
+    #[test]
+    fn custom_slide_without_title_omits_title() {
+        let slide = custom_slide("custom-abc", None, "Amazing grace…");
+        let json = serde_json::to_string(&slide).expect("serialize");
+        assert_eq!(
+            json,
+            r#"{"type":"custom","id":"custom-abc","body":"Amazing grace…"}"#
+        );
+        let back: Slide = serde_json::from_str(&json).expect("deserialize");
+        match back {
+            Slide::Custom { title, .. } => assert_eq!(title, None),
+            Slide::Verse { .. } => panic!("expected custom slide"),
+        }
+    }
+
+    #[test]
+    fn deck_deserializes_frontend_payload_in_order() {
+        // Exactly what the frontend sends when presenting a mixed deck:
+        // verse, untitled custom, titled custom, verse. Order and kinds
+        // must survive the boundary, since the stage steps by index.
+        let json = r#"[{"type":"verse","id":101,"label":"John 3:16","text":"For God…"},{"type":"custom","id":"custom-a1","body":"Point one"},{"type":"custom","id":"custom-b2","title":"Grace","body":"Amazing…"},{"type":"verse","id":205,"label":"Romans 8:28","text":"And we know…"}]"#;
+        let deck: Vec<Slide> = serde_json::from_str(json).expect("deserialize");
+        assert_eq!(deck.len(), 4);
+        assert!(matches!(deck[0], Slide::Verse { id: 101, .. }));
+        match &deck[1] {
+            Slide::Custom { id, title, body } => {
+                assert_eq!(id, "custom-a1");
+                assert_eq!(title, &None);
+                assert_eq!(body, "Point one");
+            }
+            Slide::Verse { .. } => panic!("expected custom slide at 1"),
+        }
+        match &deck[2] {
+            Slide::Custom { id, title, body } => {
+                assert_eq!(id, "custom-b2");
+                assert_eq!(title, &Some("Grace".to_string()));
+                assert_eq!(body, "Amazing…");
+            }
+            Slide::Verse { .. } => panic!("expected custom slide at 2"),
+        }
+        assert!(matches!(deck[3], Slide::Verse { id: 205, .. }));
+    }
+
+    #[test]
+    fn mixed_deck_state_serializes_in_order() {
+        let state = PresentationState::default();
+        {
+            let mut s = lock(&state);
+            s.deck = vec![
+                verse_slide(7, "John 3:16", "For God so loved…"),
+                custom_slide("custom-abc", None, "Amazing grace…"),
+            ];
+            s.index = 1;
+        }
+        let payload = {
+            let s = lock(&state);
+            stage_state_of(&s)
+        };
+        let json = serde_json::to_string(&payload).expect("serialize");
+        assert_eq!(
+            json,
+            r#"{"deck":[{"type":"verse","id":7,"label":"John 3:16","text":"For God so loved…"},{"type":"custom","id":"custom-abc","body":"Amazing grace…"}],"index":1,"background":"classic-black"}"#
+        );
     }
 
     #[test]

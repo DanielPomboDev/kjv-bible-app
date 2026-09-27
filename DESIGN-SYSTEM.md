@@ -42,14 +42,14 @@ same slide is shown no matter what theme the main window uses.
      fills any projector resolution the same way. */
   --stage-font-reading: "Source Serif 4", Georgia, serif;
   --stage-font-ui: -apple-system, "Segoe UI", sans-serif;
-  --stage-text-size: clamp(2.5rem, 7.5vmin, 9rem);
+  --stage-text-size: clamp(3rem, 11vmin, 13rem);
   /* Floor for the verse auto-fit: long verses shrink from --stage-text-size
      toward this instead of overflowing; short verses stay at the max. */
   --stage-text-min-size: 1.5rem;
   --stage-ref-size: clamp(1.125rem, 2.75vmin, 2.5rem);
-  /* Slide padding is a scale step (48px) plus a viewport share so very
-     large screens keep comfortable margins. */
-  --stage-padding: calc(var(--space-12) + 4vmin);
+  /* Slide padding is a scale step (32px) plus a viewport share so very
+     large screens keep comfortable margins without squeezing the text. */
+  --stage-padding: calc(var(--space-8) + 3vmin);
 }
 ```
 

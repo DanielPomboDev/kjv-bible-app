@@ -30,6 +30,28 @@ interface SermonDeckState {
    * nothing) if an item with the same id is already in the deck.
    */
   addToDeck: (entry: SermonDeckItem) => boolean;
+  /**
+   * Build a custom slide (AGENTS.md, Custom slide rule #2: optional
+   * title, required body) and append it to the end of the deck. The id
+   * is generated here so editors never invent one. Returns the new item,
+   * or null when the body is blank — a slide with no body is never
+   * saved.
+   */
+  addCustomSlide: (
+    title: string | undefined,
+    body: string,
+  ) => CustomSlideItem | null;
+  /**
+   * Update a custom slide in place (AGENTS.md, Custom slide rule #5):
+   * title/body change, position and id stay. Returns false (and changes
+   * nothing) when the id isn't a custom slide in the deck, or when the
+   * new body is blank — a slide with no body is never saved.
+   */
+  updateCustomSlide: (
+    id: string,
+    title: string | undefined,
+    body: string,
+  ) => boolean;
   /** Remove one slide from the deck (no-op if the id isn't queued). */
   removeFromDeck: (id: number | string) => void;
   /**
@@ -116,11 +138,54 @@ export const useSermonDeck = create<SermonDeckState>()((set, get) => ({
     return true;
   },
 
+  addCustomSlide: (title, body) => {
+    // Body is required (AGENTS.md, Custom slide rule #2): refuse a
+    // blank body here too, so no caller can persist an empty slide even
+    // past the editor's disabled Save button.
+    const cleanBody = body.trim();
+    if (cleanBody.length === 0) return null;
+    // String id in its own namespace: can never collide with numeric
+    // verse ids, and timestamp + random keeps it unique across restarts
+    // (the deck persists, so a pure counter could repeat).
+    const item: CustomSlideItem = {
+      type: "custom",
+      id: `custom-${Date.now().toString(36)}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}`,
+      ...(title !== undefined ? { title } : {}),
+      body: cleanBody,
+    };
+    const next = [...get().deck, item];
+    persist(next);
+    set({ deck: next });
+    return item;
+  },
+
   removeFromDeck: (id) => {
     const next = get().deck.filter((e) => e.id !== id);
     if (next.length === get().deck.length) return;
     persist(next);
     set({ deck: next });
+  },
+
+  updateCustomSlide: (id, title, body) => {
+    const cleanBody = body.trim();
+    if (cleanBody.length === 0) return false;
+    const deck = get().deck;
+    const index = deck.findIndex(
+      (e) => e.type === "custom" && e.id === id,
+    );
+    if (index === -1) return false;
+    const next = [...deck];
+    next[index] = {
+      type: "custom",
+      id,
+      ...(title !== undefined ? { title } : {}),
+      body: cleanBody,
+    };
+    persist(next);
+    set({ deck: next });
+    return true;
   },
 
   moveInDeck: (fromIndex, toIndex) => {
