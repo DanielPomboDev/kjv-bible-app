@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getBooks, getChapter } from "./services/bible";
 import type { Book, Chapter, ChapterVerse } from "./domain/types";
 import { Verse } from "./components/Verse";
@@ -165,6 +166,24 @@ function App() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [openSearch]);
+
+  // F11 toggles fullscreen (the app launches fullscreen — this is the
+  // way back out, and back in). Failure means we're running outside
+  // Tauri (plain browser dev); the config-set fullscreen still applies
+  // in the real app, so a failed toggle is a silent no-op.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "F11") return;
+      e.preventDefault();
+      const win = getCurrentWindow();
+      win
+        .isFullscreen()
+        .then((full) => win.setFullscreen(!full))
+        .catch(() => {});
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   return (
     <div className="app-shell" data-sidebar={sidebarOpen ? "open" : "closed"}>
