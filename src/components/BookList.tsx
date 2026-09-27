@@ -32,8 +32,8 @@ export function BookList() {
   const [books, setBooks] = useState<Book[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<"OT" | "NT", boolean>>({
-    OT: false,
-    NT: false,
+    OT: true,
+    NT: true,
   });
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -41,7 +41,11 @@ export function BookList() {
   const openBook = useNavigation((s) => s.openBook);
   const bookId = useNavigation((s) => s.bookId);
   const chapter = useNavigation((s) => s.chapter);
+  const restored = useNavigation((s) => s.restored);
   const listRef = useRef<HTMLElement>(null);
+  // One-shot: after the book list loads in a restored session, expand
+  // the testament section holding the last-read book so its chapter
+  // grid is visible. Fresh installs stay fully collapsed.
 
   useEffect(() => {
     let cancelled = false;
@@ -73,6 +77,16 @@ export function BookList() {
       ?.querySelector(`[data-book-id="${bookId}"]`)
       ?.scrollIntoView({ block: "nearest" });
   }, [bookId, query]);
+
+  const restoreExpanded = useRef(false);
+  useEffect(() => {
+    if (!books || !restored || restoreExpanded.current) return;
+    restoreExpanded.current = true;
+    const current = books.find((b) => b.id === bookId);
+    if (current) {
+      setCollapsed((c) => ({ ...c, [current.testament]: false }));
+    }
+  }, [books, restored, bookId]);
 
   if (error) {
     return <aside className="book-list">Failed to load books: {error}</aside>;
