@@ -3,11 +3,31 @@ use serde::Serialize;
 
 pub use book_lookup::{book_id_by_name, book_name};
 
-/// Location of the generated database, relative to the src-tauri crate.
-/// The bundler does not include `data/`, so in a packaged build this file
-/// does not exist and `open()` fails with a clear error instead of
-/// panicking with a path not found.
+/// Location of the generated database.
+///
+/// - Packaged builds: the bundler ships `data/bible.db` next to the
+///   executable (see `resources` in tauri.conf.json), so it is resolved
+///   from the directory holding the running binary.
+/// - Dev and `cargo test`: `src-tauri` is the working directory, so the
+///   relative path into the repo's `data/` folder is used.
+#[cfg(not(debug_assertions))]
+const DB_RELATIVE_PATH: &str = "bible.db";
+#[cfg(debug_assertions)]
 const DB_RELATIVE_PATH: &str = "../data/bible.db";
+
+/// Base directory the DB path is resolved against: the directory of the
+/// running executable when packaged, the current working directory in
+/// dev/tests (where that is `src-tauri`).
+fn db_base_dir() -> std::io::Result<std::path::PathBuf> {
+    if cfg!(debug_assertions) {
+        std::env::current_dir()
+    } else {
+        std::env::current_exe().map(|exe| exe
+            .parent()
+            .map(|p| p.to_path_buf())
+            .unwrap_or_else(|| std::path::PathBuf::from(".")))
+    }
+}
 
 /// A verse with its book name, as returned to the frontend.
 #[derive(Debug, Serialize)]
@@ -40,8 +60,8 @@ pub struct Book {
 }
 
 pub fn open() -> Result<Connection, String> {
-    let path = std::env::current_dir()
-        .map_err(|e| format!("cannot determine working directory: {e}"))?
+    let path = db_base_dir()
+        .map_err(|e| format!("cannot determine database location: {e}"))?
         .join(DB_RELATIVE_PATH);
     if !path.is_file() {
         return Err(format!(
