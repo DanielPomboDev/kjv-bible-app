@@ -36,12 +36,13 @@ export interface SearchHit {
 }
 
 /**
- * One queued verse in the sermon deck — an ordered list meant for
+ * One verse slide in the sermon deck — an ordered list meant for
  * presenting. Persists the label/text itself (see store/sermonDeck.ts)
  * so presentation needs no extra lookup, and the deck survives app
  * restarts the way settings do.
  */
-export interface SermonDeckEntry {
+export interface VerseSlideItem {
+  type: "verse";
   /** Canonical verse id (verses.id), unique within the deck. */
   id: number;
   /** e.g. "John 3:16" — ready-made slide label. */
@@ -49,6 +50,35 @@ export interface SermonDeckEntry {
   /** Verse text as it appears in the reader. */
   text: string;
 }
+
+/**
+ * One custom slide in the sermon deck (AGENTS.md, Custom slide rules
+ * #1–2): a sermon point/heading with an optional title and required
+ * body text — no formatting, images, or layouts in v1. Its `id` is a
+ * string so it can never collide with numeric verse ids; it is unique
+ * within the deck.
+ */
+export interface CustomSlideItem {
+  type: "custom";
+  id: string;
+  /** Optional heading; absent (or empty) means no title line. */
+  title?: string;
+  /** Required body text. */
+  body: string;
+}
+
+/**
+ * One item in the sermon deck: either a verse slide or a custom slide.
+ * The deck is a single ordered list of these (never two separate
+ * lists), so both types mix freely in any order.
+ */
+export type SermonDeckItem = VerseSlideItem | CustomSlideItem;
+
+/** Legacy alias for the verse slide shape. */
+export type SermonDeckEntry = VerseSlideItem;
+
+/** Alias for contexts where "slide item" reads better than "deck item". */
+export type SlideItem = SermonDeckItem;
 
 /**
  * One verse on the presentation stage — what the Rust backend holds as

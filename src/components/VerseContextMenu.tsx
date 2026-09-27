@@ -80,6 +80,7 @@ export function VerseContextMenu({
 
   const toEntry = useCallback(
     (v: ChapterVerse): SermonDeckEntry => ({
+      type: "verse",
       id: v.id,
       label: `${v.bookName} ${v.chapter}:${v.verse}`,
       text: v.text,
