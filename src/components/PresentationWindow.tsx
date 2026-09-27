@@ -11,11 +11,13 @@ import {
   getBackgroundPreset,
 } from "../presentation/backgroundPresets";
 import { SlideView } from "./SlideView";
+import { CustomSlideView } from "./CustomSlideView";
 
 /**
  * The presentation stage (Sermon rules #2–4): a borderless
- * fullscreen window, separate from the main app, showing one verse per
- * slide with stage tokens (never the app's light/dark theme).
+ * fullscreen window, separate from the main app, showing one slide at a
+ * time — a verse slide or a custom slide — with stage tokens (never the
+ * app's light/dark theme).
  *
  * The slide look comes from whichever background preset was selected when
  * presenting (Slide background rule #3): the preset id travels
@@ -115,10 +117,17 @@ export function PresentationWindow() {
   } as CSSProperties;
 
   // No buttons or toolbar on the slide itself — click anywhere advances,
-  // same as →/Space (and closes past the last slide).
+  // same as →/Space (and closes past the last slide). Verse and custom
+  // slides render through their own views but share the stage, the
+  // preset, and every navigation path, so a mixed deck steps through in
+  // order with identical keys.
   return (
     <div className="stage" onClick={advance} style={stageStyle}>
-      <SlideView slide={current} />
+      {current?.type === "custom" ? (
+        <CustomSlideView slide={current} />
+      ) : (
+        <SlideView slide={current?.type === "verse" ? current : null} />
+      )}
     </div>
   );
 }

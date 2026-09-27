@@ -73,6 +73,52 @@
   text-align: center;
 }
 
+/* Custom slides (see CustomSlideView): the stack starts at the top so
+   the title sits near the top edge, and the body fills the rest of the
+   slide exactly like verse text — same tokens, same auto-fit range, and
+   the same preset colors inherited from .stage. */
+.stage-slide-custom {
+  justify-content: flex-start;
+}
+
+/* The custom title: larger than the verse reference, bold, in the
+   preset's main text color. Fixed size outside the fitted box, so it
+   sits in the same place every slide. */
+.stage-slide-custom-title {
+  margin: 0 0 var(--space-6);
+  font-family: var(--stage-font-ui);
+  font-size: calc(var(--stage-ref-size) * 1.75);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--stage-text);
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+/* The custom body: same geometry and type treatment as verse text,
+   auto-fitted by CustomSlideView between --stage-text-size and
+   --stage-text-min-size. */
+.stage-slide-custom-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  font-family: var(--stage-font-reading);
+  font-size: var(--stage-text-size);
+  line-height: 1.35;
+  color: var(--stage-text);
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+.stage-slide-custom-body > span {
+  max-width: 100%;
+}
+
 /* The instant before the first slide arrives (or a stage opened outside
    Tauri with no backend): near-black, nothing flashy on the projector. */
 .stage-slide-waiting {

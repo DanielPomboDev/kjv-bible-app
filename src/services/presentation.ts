@@ -14,22 +14,18 @@ export function presentDeck(
   deck: readonly SermonDeckItem[],
   background: string,
 ): Promise<void> {
-  // The stage backend is verse-only for now (custom-slide presenting
-  // arrives with the editor step): queue the verse slides in deck order,
-  // stripping the discriminant so the wire payload is exactly what the
-  // verse-only deck always sent.
-  const verses = deck
-    .filter((item) => item.type === "verse")
-    .map(({ id, label, text }) => ({ id, label, text }));
-  return invoke("present_deck_command", { deck: verses, index: 0, background });
+  // Verse and custom slides share the frontend's discriminated union
+  // with the backend's tagged Slide enum, so the deck travels untouched
+  // and both step through in order by index.
+  return invoke("present_deck_command", { deck, index: 0, background });
 }
 
 /**
  * Present one verse immediately ("Present Now") — exactly that verse,
  * regardless of what's queued in the deck.
  */
-export function presentNow(verse: StageSlide, background: string): Promise<void> {
-  return invoke("present_now_command", { slide: verse, background });
+export function presentNow(slide: StageSlide, background: string): Promise<void> {
+  return invoke("present_now_command", { slide, background });
 }
 
 /**

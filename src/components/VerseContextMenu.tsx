@@ -96,6 +96,7 @@ export function VerseContextMenu({
       const background = usePresentationBackground.getState().presetId;
       void presentNow(
         {
+          type: "verse",
           id: verse.id,
           label: `${verse.bookName} ${verse.chapter}:${verse.verse}`,
           text: verse.text,

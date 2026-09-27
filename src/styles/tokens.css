@@ -45,14 +45,14 @@
   --stage-dim: #9A927F;
   --stage-font-reading: "Source Serif 4", Georgia, serif;
   --stage-font-ui: -apple-system, "Segoe UI", sans-serif;
-  --stage-text-size: clamp(2.5rem, 7.5vmin, 9rem);
+  --stage-text-size: clamp(3rem, 11vmin, 13rem);
   /* Floor for the verse auto-fit (see SlideView): the fitter shrinks long
      verses from --stage-text-size toward this, never below — 1.5rem stays
      readable from distance and sits well under what even the longest verse
      (Esther 8:9, ~90 words) needs, so it only binds pathologically. */
   --stage-text-min-size: 1.5rem;
   --stage-ref-size: clamp(1.125rem, 2.75vmin, 2.5rem);
-  --stage-padding: calc(var(--space-12) + 4vmin);
+  --stage-padding: calc(var(--space-8) + 3vmin);
 
   --font-ui: -apple-system, "Segoe UI", sans-serif;
   --font-reading: "Source Serif 4", Georgia, serif;
