@@ -1,0 +1,92 @@
+/*
+ * BackgroundPicker — grid of slide background swatches shown inside the
+ * sermon deck panel. Uses only tokens from tokens.css.
+ */
+
+.background-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.background-picker-title {
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.background-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-3) var(--space-2);
+}
+
+.background-picker-swatch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.background-picker-swatch:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.background-picker-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-reading);
+  font-size: var(--text-body-size);
+  font-weight: 600;
+  transition:
+    border-color var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-fast) var(--ease-out);
+}
+
+.background-picker-swatch:hover .background-picker-preview {
+  border-color: var(--accent);
+}
+
+/* Inset ring instead of a thicker border, so selecting never shifts
+   the grid by a pixel. */
+.background-picker-swatch-selected .background-picker-preview {
+  border-color: var(--focus-ring);
+  box-shadow: inset 0 0 0 1px var(--focus-ring);
+}
+
+.background-picker-name {
+  font-family: var(--font-ui);
+  font-size: var(--text-kbd-size);
+  line-height: 1.3;
+  color: var(--text-secondary);
+  text-align: center;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.background-picker-swatch-selected .background-picker-name {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .background-picker-preview {
+    transition: none;
+  }
+}

@@ -13,9 +13,15 @@ pub struct Slide {
     pub text: String,
 }
 
+/// Preset id the stage falls back to when the frontend sends none.
+/// Classic Black — mirrors `DEFAULT_BACKGROUND_PRESET_ID` in
+/// `src/presentation/backgroundPresets.ts`. The stage frontend also falls
+/// back to it for any unknown id, so the two sides can never disagree on
+/// what a first-time user sees.
+pub const DEFAULT_BACKGROUND: &str = "classic-black";
+
 /// The mutable part of the stage state, guarded by the mutex in
 /// [`PresentationState`].
-#[derive(Default)]
 pub struct PresentationInner {
     /// Slides in presentation order. A single "Present Now" verse is a
     /// one-slide deck, so ← is naturally inert by bounds (→ past the
@@ -24,6 +30,21 @@ pub struct PresentationInner {
     pub deck: Vec<Slide>,
     /// 0-based index into `deck`.
     pub index: usize,
+    /// Selected slide background preset id (see
+    /// `src/presentation/backgroundPresets.ts`). Travels with the stage
+    /// state for the same reason the slides do: the stage must render the
+    /// moment it loads without depending on the main window's JavaScript.
+    pub background: String,
+}
+
+impl Default for PresentationInner {
+    fn default() -> Self {
+        Self {
+            deck: Vec::new(),
+            index: 0,
+            background: DEFAULT_BACKGROUND.to_string(),
+        }
+    }
 }
 
 /// Rust-side state shared between the two windows: the slides to show
@@ -50,21 +71,30 @@ fn stage_state_of(s: &PresentationInner) -> StageState {
     StageState {
         deck: s.deck.clone(),
         index: s.index,
+        background: s.background.clone(),
     }
 }
 
-/// What the stage shows: the slides plus which one is current.
+/// What the stage shows: the slides, which one is current, and which
+/// background preset to render (resolved to colors by the stage frontend).
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StageState {
     pub deck: Vec<Slide>,
     pub index: usize,
+    pub background: String,
 }
 
 /// Open the borderless fullscreen stage window showing `deck` from
-/// `index`. Presenting again while the stage is already open reuses the
-/// window and pushes the new slide — decks get tweaked mid-sermon.
-pub fn present_deck(app: &tauri::AppHandle, deck: Vec<Slide>, index: usize) -> Result<(), String> {
+/// `index`, rendered with the `background` preset. Presenting again while
+/// the stage is already open reuses the window and pushes the new slide —
+/// decks get tweaked mid-sermon.
+pub fn present_deck(
+    app: &tauri::AppHandle,
+    deck: Vec<Slide>,
+    index: usize,
+    background: String,
+) -> Result<(), String> {
     if deck.is_empty() {
         return Err("Cannot present an empty sermon deck.".into());
     }
@@ -74,6 +104,7 @@ pub fn present_deck(app: &tauri::AppHandle, deck: Vec<Slide>, index: usize) -> R
         let mut s = state_lock(&state);
         s.deck = deck;
         s.index = clamped;
+        s.background = background;
     }
     show_stage(app)
 }
@@ -83,12 +114,17 @@ pub fn present_deck(app: &tauri::AppHandle, deck: Vec<Slide>, index: usize) -> R
 /// consulted or modified (Sermon rule #2). Modeled as a
 /// one-slide deck: ← is inert by bounds, and → past the single slide
 /// closes the stage (the frontend exits when showing the last slide).
-pub fn present_single(app: &tauri::AppHandle, slide: Slide) -> Result<(), String> {
+pub fn present_single(
+    app: &tauri::AppHandle,
+    slide: Slide,
+    background: String,
+) -> Result<(), String> {
     {
         let state = app.state::<PresentationState>();
         let mut s = state_lock(&state);
         s.deck = vec![slide];
         s.index = 0;
+        s.background = background;
     }
     show_stage(app)
 }
@@ -202,22 +238,37 @@ pub fn presentation_state(app: tauri::AppHandle) -> StageState {
     stage_state_of(&s)
 }
 
-/// Present a queued sermon deck, starting at `index` (0 when omitted).
+/// Present a queued sermon deck, starting at `index` (0 when omitted),
+/// rendered with the `background` preset (Classic Black when omitted).
 #[tauri::command]
 pub fn present_deck_command(
     app: tauri::AppHandle,
     deck: Vec<Slide>,
     index: Option<usize>,
+    background: Option<String>,
 ) -> Result<(), String> {
-    present_deck(&app, deck, index.unwrap_or(0))
+    present_deck(
+        &app,
+        deck,
+        index.unwrap_or(0),
+        background.unwrap_or_else(|| DEFAULT_BACKGROUND.to_string()),
+    )
 }
 
 /// Present a single verse right away — the verse context menu's
-/// "Present Now" item.
+/// "Present Now" item — rendered with the `background` preset.
 #[tauri::command]
-pub fn present_now_command(app: tauri::AppHandle, slide: Slide) -> Result<(), String> {
+pub fn present_now_command(
+    app: tauri::AppHandle,
+    slide: Slide,
+    background: Option<String>,
+) -> Result<(), String> {
     eprintln!("[presentation] present_now_command invoked");
-    let result = present_single(&app, slide);
+    let result = present_single(
+        &app,
+        slide,
+        background.unwrap_or_else(|| DEFAULT_BACKGROUND.to_string()),
+    );
     match &result {
         Ok(()) => eprintln!("[presentation] present_now_command ok"),
         Err(e) => eprintln!("[presentation] present_now_command FAILED: {e}"),
@@ -290,6 +341,9 @@ mod tests {
             stage_state_of(&s)
         };
         let json = serde_json::to_string(&payload).expect("serialize");
-        assert_eq!(json, r#"{"deck":[],"index":0}"#);
+        assert_eq!(
+            json,
+            r#"{"deck":[],"index":0,"background":"classic-black"}"#
+        );
     }
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import {
   fetchStageState,
   onSlide,
@@ -6,12 +6,24 @@ import {
   presentationMove,
 } from "../services/presentation";
 import type { StageSlide, StageState } from "../domain/types";
+import {
+  DEFAULT_BACKGROUND_PRESET_ID,
+  getBackgroundPreset,
+} from "../presentation/backgroundPresets";
 import { SlideView } from "./SlideView";
 
 /**
  * The presentation stage (Sermon rules #2–4): a borderless
  * fullscreen window, separate from the main app, showing one verse per
  * slide with stage tokens (never the app's light/dark theme).
+ *
+ * The slide look comes from whichever background preset was selected when
+ * presenting (Slide background rule #3): the preset id travels
+ * with the stage state from the Rust backend, and is resolved here with
+ * `getBackgroundPreset` — background, verse text color, and reference
+ * color all come from the preset via inline style overrides of the stage
+ * tokens, never a fixed style. Unknown or missing ids fall back to
+ * Classic Black, which is also what a first-time user sees.
  *
  * Two windows share one frontend build; main.tsx routes to this
  * component when the window label is "presentation". The stage is
@@ -87,10 +99,25 @@ export function PresentationWindow() {
 
   const current: StageSlide | null = stage?.deck[stage.index] ?? null;
 
+  // The preset owns the whole slide look: its background replaces the
+  // fixed stage background, its text/reference colors override the stage
+  // tokens (inherited by SlideView), so every preset stays readable —
+  // including the light parchment one with its dark text. Before the
+  // first stage state arrives, Classic Black shows (same fallback
+  // `getBackgroundPreset` uses for unknown ids).
+  const preset = getBackgroundPreset(
+    stage?.background ?? DEFAULT_BACKGROUND_PRESET_ID,
+  );
+  const stageStyle = {
+    background: preset.background,
+    "--stage-text": preset.textColor,
+    "--stage-dim": preset.referenceColor,
+  } as CSSProperties;
+
   // No buttons or toolbar on the slide itself — click anywhere advances,
   // same as →/Space (and closes past the last slide).
   return (
-    <div className="stage" onClick={advance}>
+    <div className="stage" onClick={advance} style={stageStyle}>
       <SlideView slide={current} />
     </div>
   );

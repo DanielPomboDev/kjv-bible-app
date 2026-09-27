@@ -2,6 +2,7 @@ import { useNavigation } from "../store/navigation";
 import { useSearch } from "../store/search";
 import { SermonDeckPanel } from "./SermonDeckPanel";
 import { SettingsPanel } from "./SettingsPanel";
+import { SearchIcon } from "./icons";
 
 /**
  * Top bar: the current chapter read-out, the search field that opens the
@@ -30,7 +31,7 @@ export function TopBar() {
         aria-haspopup="dialog"
       >
         <span className="top-bar-search-icon" aria-hidden="true">
-          🔍
+          <SearchIcon />
         </span>
         <span className="top-bar-search-placeholder">Search…</span>
         <kbd className="top-bar-search-kbd">Ctrl+K</kbd>

@@ -10,16 +10,19 @@ import type { SermonDeckEntry, StageSlide, StageState } from "../domain/types";
  */
 
 /** Present the whole sermon deck, starting at the first verse. */
-export function presentDeck(deck: readonly SermonDeckEntry[]): Promise<void> {
-  return invoke("present_deck_command", { deck, index: 0 });
+export function presentDeck(
+  deck: readonly SermonDeckEntry[],
+  background: string,
+): Promise<void> {
+  return invoke("present_deck_command", { deck, index: 0, background });
 }
 
 /**
  * Present one verse immediately ("Present Now") — exactly that verse,
  * regardless of what's queued in the deck.
  */
-export function presentNow(verse: StageSlide): Promise<void> {
-  return invoke("present_now_command", { slide: verse });
+export function presentNow(verse: StageSlide, background: string): Promise<void> {
+  return invoke("present_now_command", { slide: verse, background });
 }
 
 /**

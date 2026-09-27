@@ -50,8 +50,26 @@
 }
 
 .testament-chevron {
-  font-size: var(--text-verse-number-size);
+  display: inline-flex;
+  flex-shrink: 0;
   color: var(--text-secondary);
+}
+
+.testament-chevron svg {
+  width: var(--space-3);
+  height: var(--space-3);
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+
+/* One chevron icon; it points right when the section is collapsed. */
+.testament-header[aria-expanded="false"] .testament-chevron svg {
+  transform: rotate(-90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .testament-chevron svg {
+    transition: none;
+  }
 }
 
 .book-items {

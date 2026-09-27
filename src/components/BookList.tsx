@@ -3,6 +3,7 @@ import { getBooks } from "../services/bible";
 import type { Book } from "../domain/types";
 import { ChapterGrid } from "./ChapterGrid";
 import { useNavigation } from "../store/navigation";
+import { ChevronDownIcon } from "./icons";
 
 const TESTAMENTS = [
   { id: "OT", label: "Old Testament" },
@@ -58,7 +59,7 @@ export function BookList() {
               onClick={() => setCollapsed((c) => ({ ...c, [id]: !c[id] }))}
             >
               <span className="testament-chevron" aria-hidden="true">
-                {isCollapsed ? "▸" : "▾"}
+                <ChevronDownIcon />
               </span>
               {label}
             </button>

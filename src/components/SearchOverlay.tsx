@@ -3,6 +3,7 @@ import { searchBible } from "../services/bible";
 import type { SearchResult, SearchHit } from "../domain/types";
 import { useNavigation } from "../store/navigation";
 import { useSearch } from "../store/search";
+import { SearchIcon } from "./icons";
 
 /** Debounce before hitting the backend while the user types (ms). */
 const DEBOUNCE_MS = 150;
@@ -239,7 +240,7 @@ export function SearchOverlay() {
       <div className="search-panel">
         <div className="search-input-row">
           <span className="search-input-icon" aria-hidden="true">
-            🔍
+            <SearchIcon />
           </span>
           <input
             ref={inputRef}
