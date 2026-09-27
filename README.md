@@ -1,40 +1,28 @@
-# KJV Bible App
+# KJV Bible
 
-Offline desktop King James Version Bible app — Tauri 2 (Rust) + React + TypeScript. No login, no internet, no cloud.
+A free, fully offline King James Version Bible for Windows. No account, no internet, no ads — just the Bible and tools for studying and preaching.
 
-## Features (v1.0.0)
+## Download
 
-- **Reading** — all 66 books / 31,102 verses from a local SQLite database; last-read position is remembered across restarts.
-- **Search** — words, phrases (FTS5), and references like `John 3:16`; `Ctrl+K` anywhere.
-- **Selection & clipboard** — click, `Ctrl+Click`, `Shift+Click` ranges; copy cleanly formatted plain text.
-- **Sermon deck** — queue verses (one at a time or bulk "Add to Deck") plus custom slides; reorder, duplicate, presenter notes.
-- **Sermon library** — multiple sermons, each with its own outline, deck, and background; JSON export/import backup per sermon.
-- **Presenting** — fullscreen audience window + presenter window with notes, 10 background presets, monitor picker; `→`/`Space` next, `←` previous, `Esc` exit.
-- **Polish** — light/dark theme, reading font sizes, chapter prev/next (`←`/`→`), shortcuts help dialog.
+Go to [**Releases**](https://github.com/DanielPomboDev/kjv-bible-app/releases), download `KJV Bible_1.0.0_x64-setup.exe`, and run it.
 
-## Run it
+## What you can do
 
-```sh
-npm install
-npx tauri dev        # dev window (frontend + Rust backend)
-```
+- **Read** all 66 books (31,102 verses). The app reopens where you left off.
+- **Search** any word or phrase, or jump straight to a reference like `John 3:16` (`Ctrl+K`).
+- **Select verses** with click, `Ctrl+Click`, or `Shift+Click` — then copy them as clean text or queue them all into your sermon deck at once.
+- **Build sermons** — each sermon keeps its own outline, slide deck, and background. Back them up with Export/Import in the Sermon Library.
+- **Present** — fullscreen slides for the congregation plus a private presenter view with your notes (`→` next, `←` back, `Esc` exit).
+- **Adjust** — light/dark theme, reading text size, and a `?` button listing every shortcut.
 
-## Build the installer
+## Your data
 
-```sh
-npx tauri build      # -> src-tauri/target/release/bundle/nsis/KJV Bible_1.0.0_x64-setup.exe
-```
+Everything stays on your computer. Sermons are stored locally — use **Export** in the Sermon Library to keep backup files of work you can't lose.
 
-The build embeds `data/bible.db` as a resource, so the installed app works fully offline.
+## Help & feedback
 
-## Backup
+Found a bug or want a feature? [Open an issue](https://github.com/DanielPomboDev/kjv-bible-app/issues).
 
-Sermon Library → **Export** saves a sermon as `.kjv-sermon.json`; **Import…** restores it (a colliding id gets a fresh one, nothing is overwritten).
+---
 
-## Conventions
-
-See `project notes` and `the style guide` before contributing. Highlights:
-
-- Never change or invent Bible text.
-- One feature per change; use the design tokens; keyboard must work too.
-- Clipboard copy is always plain text, verses separated by a blank line.
+*For developers: run `npx tauri dev` after `npm install`; build with `npx tauri build`. See `project notes` and `the style guide` for conventions.*
