@@ -1,7 +1,59 @@
 import { useEffect, useRef, useState } from "react";
 import { useSermonLibrary } from "../store/sermonLibrary";
 import { useToast } from "../store/toast";
+import { isSermon } from "../store/sermonStorage";
+import type { Sermon } from "../domain/types";
 import { CloseIcon, LibraryIcon } from "../components/icons";
+
+/** Backup file envelope, so imports can reject foreign JSON early. */
+interface SermonBackup {
+  app: "kjv-bible";
+  kind: "sermon";
+  version: 1;
+  sermon: Sermon;
+}
+
+function isBackup(value: unknown): value is SermonBackup {
+  if (typeof value !== "object" || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    obj.app === "kjv-bible" &&
+    obj.kind === "sermon" &&
+    obj.version === 1 &&
+    isSermon(obj.sermon)
+  );
+}
+
+/** `My Sermon Title` → `my-sermon-title.kjv-sermon.json`. */
+function backupFilename(title: string): string {
+  const slug =
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "sermon";
+  return `${slug}.kjv-sermon.json`;
+}
+
+/** Save a sermon backup through a Blob download (no backend needed). */
+function downloadBackup(sermon: Sermon): void {
+  const backup: SermonBackup = {
+    app: "kjv-bible",
+    kind: "sermon",
+    version: 1,
+    sermon,
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = backupFilename(sermon.title);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
 
 /** "Sep 27, 2026" — falls back to the raw date part when unparseable. */
 function formatSermonDate(iso: string): string {
@@ -35,6 +87,7 @@ export function SermonLibrary() {
   const openSermon = useSermonLibrary((s) => s.openSermon);
   const renameSermon = useSermonLibrary((s) => s.renameSermon);
   const deleteSermon = useSermonLibrary((s) => s.deleteSermon);
+  const importSermon = useSermonLibrary((s) => s.importSermon);
   const showToast = useToast((s) => s.showToast);
   // Non-null while renaming that sermon (inline editor); non-null while
   // that sermon's delete is awaiting confirmation. Never both at once.
@@ -43,6 +96,26 @@ export function SermonLibrary() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const newButtonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const onImportFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed: unknown = JSON.parse(String(reader.result));
+        if (!isBackup(parsed)) {
+          showToast("Not a sermon backup file");
+          return;
+        }
+        const entry = importSermon(parsed.sermon);
+        showToast(`Imported "${entry.title}"`);
+      } catch {
+        showToast("Could not read that file");
+      }
+    };
+    reader.onerror = () => showToast("Could not read that file");
+    reader.readAsText(file);
+  };
 
   // Focus New Sermon on open so keyboard users land somewhere useful.
   useEffect(() => {
@@ -138,6 +211,26 @@ export function SermonLibrary() {
                 >
                   New Sermon
                 </button>
+                <button
+                  type="button"
+                  className="sermon-library-btn"
+                  onClick={() => fileRef.current?.click()}
+                >
+                  Import…
+                </button>
+                <input
+                  type="file"
+                  ref={fileRef}
+                  hidden
+                  accept=".json,application/json"
+                  aria-label="Import sermon backup file"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    // Reset so picking the same file again still fires.
+                    e.target.value = "";
+                    if (file) onImportFile(file);
+                  }}
+                />
               </div>
             </div>
             <ol className="sermon-library-list">
@@ -263,6 +356,17 @@ export function SermonLibrary() {
                           onClick={() => startRename(sermon.id, sermon.title)}
                         >
                           Rename
+                        </button>
+                        <button
+                          type="button"
+                          className="sermon-library-btn"
+                          aria-label={`Export ${sermon.title} to a backup file`}
+                          onClick={() => {
+                            downloadBackup(sermon);
+                            showToast(`Exported "${sermon.title}"`);
+                          }}
+                        >
+                          Export
                         </button>
                         <button
                           type="button"

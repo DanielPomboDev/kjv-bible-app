@@ -56,6 +56,13 @@ interface SermonLibraryState {
    */
   deleteSermon: (id: string) => boolean;
   /**
+   * Import a sermon from a backup file (already validated with
+   * `isSermon` by the caller). A colliding id gets a fresh one so the
+   * import never overwrites an existing sermon. The import opens, and
+   * is returned so the caller can report its title.
+   */
+  importSermon: (sermon: Sermon) => Sermon;
+  /**
    * Record the active store's latest edits against the matching library
    * entry (or append it, defensively, if its id is somehow unknown —
    * the active store's sermon is open by definition). Never touches the
@@ -139,6 +146,19 @@ export const useSermonLibrary = create<SermonLibraryState>()((set, get) => ({
       useActiveSermon.getState().replaceSermon(entry);
     }
     return true;
+  },
+
+  importSermon: (sermon) => {
+    const { sermons } = get();
+    const taken = new Set(sermons.map((s) => s.id));
+    const entry: Sermon = taken.has(sermon.id)
+      ? { ...sermon, id: newSermonId() }
+      : { ...sermon };
+    const next = [...sermons, entry];
+    persistLibrary(next, entry.id);
+    set({ sermons: next, activeId: entry.id });
+    useActiveSermon.getState().replaceSermon(entry);
+    return entry;
   },
 
   syncActive: (sermon) => {
