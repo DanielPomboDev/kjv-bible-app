@@ -24,6 +24,7 @@ import "./styles/background-picker.css";
 function App() {
   const bookId = useNavigation((s) => s.bookId);
   const chapter = useNavigation((s) => s.chapter);
+  const sidebarOpen = useNavigation((s) => s.sidebarOpen);
   const openSearch = useSearch((s) => s.openSearch);
   const [loaded, setLoaded] = useState<Chapter | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +76,7 @@ function App() {
   }, [openSearch]);
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-sidebar={sidebarOpen ? "open" : "closed"}>
       <BookList />
       <main className="reading-pane">
         <TopBar />

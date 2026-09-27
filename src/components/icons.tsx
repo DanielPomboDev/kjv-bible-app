@@ -41,8 +41,7 @@ export function SearchIcon(props: IconProps) {
   );
 }
 
-/** Sliders — settings gear replacement. */
-export function SettingsIcon(props: IconProps) {
+/** Sliders — settings gear replacement. */export function SettingsIcon(props: IconProps) {
   return (
     <Svg {...props}>
       <path d="M21 4h-7" />
@@ -58,8 +57,17 @@ export function SettingsIcon(props: IconProps) {
   );
 }
 
-/** Stacked layers — sermon deck toggle (a queue of slides). */
-export function DeckIcon(props: IconProps) {
+/** Sidebar collapse toggle — panel with a highlighted left edge. */
+export function PanelLeftIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M9 3v18" />
+    </Svg>
+  );
+}
+
+/** Stacked layers — sermon deck toggle (a queue of slides). */export function DeckIcon(props: IconProps) {
   return (
     <Svg {...props}>
       <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z" />
