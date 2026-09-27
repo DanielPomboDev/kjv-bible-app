@@ -17,6 +17,44 @@ selected result. A copy toolbar floats above the bottom center of the
 window only when one or more verses are selected, and disappears when
 nothing is selected.
 
+## Presentation window ("the stage")
+
+The sermon/presentation window is a separate borderless fullscreen window
+whose only job is to be read from the back row of a room on a projector.
+It deliberately does NOT reuse the app's light/dark theme: the app theme
+is tuned for reading at arm's length (warm paper tones, small type),
+while a projected slide needs maximum contrast and enormous type. The
+stage tokens below are defined once on `:root`, theme-independent, so the
+same slide is shown no matter what theme the main window uses.
+
+```css
+:root {
+  /* Pure black: in a dark room the screen's edges disappear and the
+     verse floats; maximum contrast for text on top. */
+  --stage-bg: #000000;
+  /* Off-white (96%): maximum readable contrast, softer than pure #FFF
+     under projector blowout. */
+  --stage-text: #F5F2EC;   /* verse text */
+  --stage-dim: #9A927F;    /* reference, counter — must stay legible
+                              from distance but read as secondary */
+  /* Scripture serif for the verse itself; UI sans for the reference,
+     matching the reader's split. Sizes are viewport-relative so a slide
+     fills any projector resolution the same way. */
+  --stage-font-reading: "Source Serif 4", Georgia, serif;
+  --stage-font-ui: -apple-system, "Segoe UI", sans-serif;
+  --stage-text-size: clamp(2.5rem, 7.5vmin, 9rem);
+  --stage-ref-size: clamp(1.125rem, 2.75vmin, 2.5rem);
+  /* Slide padding is a scale step (48px) plus a viewport share so very
+     large screens keep comfortable margins. */
+  --stage-padding: calc(var(--space-12) + 4vmin);
+}
+```
+
+Layout: one verse per slide — verse text centered both axes, `line-height`
+1.35 (tighter than the reader's 1.7 — a slide is scanned, not read),
+reference smaller in `--stage-dim`, centered near the bottom. Keyboard:
+→/Space = next slide, ← = previous slide, Esc = exit.
+
 ## Colors (CSS variables)
 
 ```css

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { presentNow } from "../services/presentation";
 import { useSermonDeck } from "../store/sermonDeck";
 import { useToast } from "../store/toast";
 import type { ChapterVerse, SermonDeckEntry } from "../domain/types";
@@ -86,15 +87,17 @@ export function VerseContextMenu({
   );
 
   const onPresentNow = useCallback(() => {
-    // Fullscreen presentation arrives in a later step; for now, log so
-    // the wiring is verifiable end to end.
+    // Open the fullscreen stage on this one verse only — the sermon deck
+    // is untouched (AGENTS.md, Sermon rule #2).
     if (verse) {
-      console.log(
-        `[present-now] ${verse.bookName} ${verse.chapter}:${verse.verse} — ${verse.text}`,
-      );
+      void presentNow({
+        id: verse.id,
+        label: `${verse.bookName} ${verse.chapter}:${verse.verse}`,
+        text: verse.text,
+      }).catch((e) => showToast(`Presentation failed: ${e}`));
     }
     onClose();
-  }, [verse, onClose]);
+  }, [verse, showToast, onClose]);
 
   const onAddToDeck = useCallback(() => {
     if (verse) {

@@ -51,6 +51,7 @@
 
 .sermon-deck-toggle:focus-visible,
 .sermon-deck-clear:focus-visible,
+.sermon-deck-present:focus-visible,
 .sermon-deck-btn:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
@@ -122,6 +123,27 @@
 }
 
 .sermon-deck-clear:hover {
+  color: var(--accent);
+}
+
+/* Present: the panel's primary action, filled like "Copy Selected". */
+.sermon-deck-present {
+  padding: var(--space-1) var(--space-2);
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  font-weight: 600;
+  color: var(--accent-contrast);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) var(--ease-out),
+    color var(--motion-fast) var(--ease-out);
+}
+
+.sermon-deck-present:hover {
+  background: var(--accent-soft);
   color: var(--accent);
 }
 

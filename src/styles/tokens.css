@@ -36,6 +36,19 @@
 }
 
 :root {
+  /* --- Presentation stage (theme-independent — see DESIGN-SYSTEM.md,
+     "Presentation window"; the stage must not follow light/dark). --- */
+  /* Pure black: in a dark room the screen's edges disappear and the
+     verse floats; maximum contrast for text on top. */
+  --stage-bg: #000000;
+  --stage-text: #F5F2EC;
+  --stage-dim: #9A927F;
+  --stage-font-reading: "Source Serif 4", Georgia, serif;
+  --stage-font-ui: -apple-system, "Segoe UI", sans-serif;
+  --stage-text-size: clamp(2.5rem, 7.5vmin, 9rem);
+  --stage-ref-size: clamp(1.125rem, 2.75vmin, 2.5rem);
+  --stage-padding: calc(var(--space-12) + 4vmin);
+
   --font-ui: -apple-system, "Segoe UI", sans-serif;
   --font-reading: "Source Serif 4", Georgia, serif;
 
