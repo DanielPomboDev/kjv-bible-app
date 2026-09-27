@@ -1,0 +1,84 @@
+/*
+ * Presentation stage — a separate borderless fullscreen window, styled
+ * only with the theme-independent stage tokens (see the style guide,
+ * "Presentation window"). Never the app's light/dark theme: this has to
+ * read from across a room on a projector.
+ *
+ * Geometry: the verse block is centered in the whole slide and the
+ * reference is pinned near the bottom edge (above the stage padding) —
+ * text blocks must size fluidly because --stage-text-size scales with
+ * the viewport, not with rem.
+ */
+
+.stage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--stage-bg);
+  color: var(--stage-text);
+  font-family: var(--stage-font-reading);
+  padding: var(--stage-padding);
+  overflow: hidden;
+  /* Nothing on a projected slide is interactive; text stays selectable
+     for accessibility but the cursor is a distraction on the big screen. */
+  user-select: none;
+  cursor: none;
+}
+
+.stage-slide {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  width: 100%;
+}
+
+/* The verse: fills the slide above the reference, content centered both
+   axes. flex: 1 + inner flexing centers 1-line and 6-line verses alike. */
+.stage-slide-text {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  font-family: var(--stage-font-reading);
+  font-size: var(--stage-text-size);
+  line-height: 1.35;
+  color: var(--stage-text);
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+/* The reference: smaller, dimmer, pinned to the bottom of the slide. */
+.stage-slide-ref {
+  margin: var(--space-8) 0 0;
+  font-family: var(--stage-font-ui);
+  font-size: var(--stage-ref-size);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--stage-dim);
+  text-align: center;
+}
+
+/* The instant before the first slide arrives (or a stage opened outside
+   Tauri with no backend): near-black, nothing flashy on the projector. */
+.stage-slide-waiting {
+  margin: 0;
+  font-size: var(--stage-ref-size);
+  color: var(--stage-dim);
+}
+
+/* Honor prefers-reduced-motion: nothing animates today; declared so any
+   future slide transition degrades to instant too. */
+@media (prefers-reduced-motion: reduce) {
+  .stage * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

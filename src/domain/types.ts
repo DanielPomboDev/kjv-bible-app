@@ -51,6 +51,27 @@ export interface SermonDeckEntry {
 }
 
 /**
+ * One verse on the presentation stage — what the Rust backend holds as
+ * the current slide state (see src-tauri/src/presentation.rs). Same shape
+ * as SermonDeckEntry; the label is the ready-made reference.
+ */
+export interface StageSlide {
+  id: number;
+  label: string;
+  text: string;
+}
+
+/**
+ * Stage snapshot pushed from Rust (`presentation://slide` event and the
+ * initial pull): the slides in order plus which one is current. A single
+ * "Present Now" verse is a one-slide deck, so navigation is inert there.
+ */
+export interface StageState {
+  deck: StageSlide[];
+  index: number;
+}
+
+/**
  * The backend's verdict on a query, plus its results:
  * - `verse`:   "John 3:16" — that single verse
  * - `chapter`: "John 3" — every verse of the chapter, in order

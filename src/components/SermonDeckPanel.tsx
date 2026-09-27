@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { presentDeck } from "../services/presentation";
 import { useSermonDeck } from "../store/sermonDeck";
+import { useToast } from "../store/toast";
 
 /**
  * The sermon deck panel: a stack button in the TopBar opening a popover
@@ -10,7 +12,7 @@ import { useSermonDeck } from "../store/sermonDeck";
  * Mirrors SettingsPanel's popover behaviour: Escape or an outside click
  * closes it; styled with popover tokens (surface, radius-lg, shadow-2).
  * Drag-to-reorder is deliberately not built — up/down buttons are
- * simpler to make solid, and presentation mode doesn't exist yet.
+ * simpler to make solid.
  */
 export function SermonDeckPanel() {
   const [open, setOpen] = useState(false);
@@ -18,6 +20,7 @@ export function SermonDeckPanel() {
   const removeFromDeck = useSermonDeck((s) => s.removeFromDeck);
   const moveInDeck = useSermonDeck((s) => s.moveInDeck);
   const clearDeck = useSermonDeck((s) => s.clearDeck);
+  const showToast = useToast((s) => s.showToast);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape while open (focus may sit anywhere in the popover).
@@ -57,6 +60,13 @@ export function SermonDeckPanel() {
     [moveInDeck],
   );
 
+  const onPresent = useCallback(() => {
+    if (deck.length > 0) {
+      setOpen(false);
+      void presentDeck(deck).catch((e) => showToast(`Presentation failed: ${e}`));
+    }
+  }, [deck, showToast]);
+
   const count = deck.length;
 
   return (
@@ -92,6 +102,13 @@ export function SermonDeckPanel() {
                 <span className="sermon-deck-count" aria-live="polite">
                   {count} verse{count === 1 ? "" : "s"}
                 </span>
+                <button
+                  type="button"
+                  className="sermon-deck-present"
+                  onClick={onPresent}
+                >
+                  Present
+                </button>
                 <button
                   type="button"
                   className="sermon-deck-clear"
