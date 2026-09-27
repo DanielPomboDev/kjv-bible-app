@@ -7,88 +7,51 @@ import {
 } from "react";
 import { usePresentFlow } from "../store/presentFlow";
 import { useActiveSermon } from "../store/activeSermon";
-import type { CustomSlideItem, SermonDeckItem } from "../domain/types";
+import {
+  deckKey,
+  type CustomSlideItem,
+} from "../domain/types";
 import { useToast } from "../store/toast";
 import { BackgroundPicker } from "../presentation/BackgroundPicker";
 import { CustomSlideEditor } from "../presentation/CustomSlideEditor";
+import { SlideNotesEditor } from "../presentation/SlideNotesEditor";
 import { OutlineTab } from "../sermon/OutlineTab";
-import { ArrowDownIcon, ArrowUpIcon, CloseIcon, DeckIcon } from "./icons";
+import { ArrowDownIcon, ArrowUpIcon, CloseIcon, CopyIcon, DeckIcon } from "./icons";
 
 /**
  * Private presenter notes for one slide (Presenter notes rule
- * #1): a small toggle under the slide entry expanding a plain textarea.
- * Notes save on blur (or when collapsing the field) and clear when left
- * blank — they are stored on the slide but never rendered on the
- * audience presentation window.
+ * #1): a compact button under the slide entry showing whether notes
+ * exist (dot marker). Clicking opens the dedicated notes editor dialog.
+ * Notes are stored on the slide but never rendered on the audience
+ * presentation window.
  */
-function SlideNotesField({
-  item,
+function SlideNotesButton({
+  hasNotes,
   label,
+  onOpen,
 }: {
-  item: SermonDeckItem;
+  hasNotes: boolean;
   label: string;
+  onOpen: () => void;
 }) {
-  const setSlideNotes = useActiveSermon((s) => s.setSlideNotes);
-  const notes = item.notes ?? "";
-  const [expanded, setExpanded] = useState(false);
-  const [draft, setDraft] = useState(notes);
-
-  // Follow external changes (sermon switch, or another edit of the
-  // same slide) so the field never shows a stale value.
-  useEffect(() => {
-    setDraft(notes);
-  }, [notes, item.id]);
-
-  const save = useCallback(
-    (value: string) => setSlideNotes(item.id, value),
-    [setSlideNotes, item.id],
-  );
-
-  const fieldId = `slide-notes-${item.type}-${item.id}`;
-  const hasNotes = notes.length > 0;
-
   return (
     <div className="sermon-deck-notes">
       <button
         type="button"
         className="sermon-deck-notes-toggle"
-        aria-expanded={expanded}
-        aria-controls={fieldId}
-        onClick={() => {
-          // Collapsing with unsaved edits saves first so nothing typed
-          // is lost by toggling the field shut.
-          if (expanded && draft !== notes) save(draft);
-          setExpanded((e) => !e);
-        }}
+        aria-haspopup="dialog"
+        aria-label={
+          hasNotes
+            ? `Edit presenter notes for ${label}`
+            : `Add presenter notes for ${label}`
+        }
+        onClick={onOpen}
       >
-        {expanded ? "Hide notes" : hasNotes ? "Edit notes" : "Add notes"}
-        {hasNotes && !expanded && (
+        {hasNotes ? "Edit notes" : "Add notes"}
+        {hasNotes && (
           <span className="sermon-deck-notes-dot" aria-hidden="true" />
         )}
       </button>
-      {expanded && (
-        <textarea
-          id={fieldId}
-          className="sermon-deck-notes-input"
-          value={draft}
-          rows={2}
-          placeholder="Private presenter notes — never shown on stage"
-          aria-label={`Presenter notes for ${label}`}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={() => {
-            if (draft !== notes) save(draft);
-          }}
-          onKeyDown={(e) => {
-            // Escape ends notes editing without closing the whole
-            // panel (the panel also listens for Escape on window).
-            if (e.key === "Escape") {
-              e.stopPropagation();
-              if (draft !== notes) save(draft);
-              setExpanded(false);
-            }
-          }}
-        />
-      )}
     </div>
   );
 }
@@ -115,14 +78,18 @@ export function SermonDeckPanel() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   // Non-null while the editor is editing an existing custom slide (its
-  // id); null when adding a fresh one.
+  // deck key); null when adding a fresh one.
   const [editingId, setEditingId] = useState<string | null>(null);
+  // Deck key of the slide whose notes dialog is open; null when closed.
+  const [notesKey, setNotesKey] = useState<string | null>(null);
   const deck = useActiveSermon((s) => s.sermon.deck);
   const outlineCount = useActiveSermon((s) => s.sermon.outline.length);
   const sermonTitle = useActiveSermon((s) => s.sermon.title);
   const addCustomSlide = useActiveSermon((s) => s.addCustomSlide);
   const updateCustomSlide = useActiveSermon((s) => s.updateCustomSlide);
   const removeFromDeck = useActiveSermon((s) => s.removeFromDeck);
+  const duplicateDeckItem = useActiveSermon((s) => s.duplicateDeckItem);
+  const setSlideNotes = useActiveSermon((s) => s.setSlideNotes);
   const moveInDeck = useActiveSermon((s) => s.moveInDeck);
   const clearDeck = useActiveSermon((s) => s.clearDeck);
   const showToast = useToast((s) => s.showToast);
@@ -148,6 +115,22 @@ export function SermonDeckPanel() {
     setEditorOpen(false);
     setEditingId(null);
   }, []);
+
+  // Close the notes dialog and forget which slide it targeted.
+  const closeNotes = useCallback(() => {
+    setNotesKey(null);
+  }, []);
+
+  // Save from the notes dialog: blank clears (see setSlideNotes), then
+  // close. The slide could have been removed while the dialog was open
+  // — saving then just closes, like the custom slide editor path.
+  const onSaveNotes = useCallback(
+    (notes: string) => {
+      if (notesKey !== null) setSlideNotes(notesKey, notes);
+      closeNotes();
+    },
+    [notesKey, setSlideNotes, closeNotes],
+  );
 
   // Close on Escape while open (focus may sit anywhere in the popover).
   // When the background picker or the custom slide editor is open,
@@ -212,13 +195,30 @@ export function SermonDeckPanel() {
     }
   }, [deck]);
 
+  // The slide whose notes dialog is open, if it is still in the deck
+  // (it could have been removed while the dialog was open — saving
+  // then just closes, like the custom slide editor path).
+  const notesItem =
+    notesKey !== null
+      ? (deck.find((e) => deckKey(e) === notesKey) ?? null)
+      : null;
+
+  const notesLabel =
+    notesItem === null
+      ? ""
+      : notesItem.type === "verse"
+        ? notesItem.label
+        : notesItem.title || "Custom slide";
+
   // The custom slide under edit, if it is still in the deck (it could
   // have been removed while the editor was open — saving then no-ops
-  // with a toast instead of crashing).
+  // with a toast instead of crashing). Matched by deck key so a
+  // duplicated custom slide edits its own copy, not its twin.
   const editingItem =
     editingId !== null
       ? (deck.find(
-          (e): e is CustomSlideItem => e.type === "custom" && e.id === editingId,
+          (e): e is CustomSlideItem =>
+            e.type === "custom" && deckKey(e) === editingId,
         ) ?? null)
       : null;
 
@@ -385,8 +385,9 @@ export function SermonDeckPanel() {
           {editorOpen && (
             <CustomSlideEditor
               // Remount per target so the fields always start pre-filled
-              // with that slide (or empty for a new one).
-              key={editingItem?.id ?? "new"}
+              // with that slide (or empty for a new one). Keyed by deck
+              // key: duplicated custom slides share an id.
+              key={editingItem ? deckKey(editingItem) : "new"}
               initialTitle={editingItem?.title ?? ""}
               initialBody={editingItem?.body ?? ""}
               saveLabel={editingItem ? "Save Changes" : "Add Slide"}
@@ -410,6 +411,9 @@ export function SermonDeckPanel() {
                     ? item.label
                     : item.title || "Custom slide";
                 const preview = item.type === "verse" ? item.text : item.body;
+                // Per-entry identity (see deckKey): duplicated verses
+                // share an id, so rows, edits, and removal key off this.
+                const key = deckKey(item);
                 const entryInner = (
                   <>
                     <span className="sermon-deck-ref">
@@ -428,7 +432,7 @@ export function SermonDeckPanel() {
                 );
                 return (
                   <li
-                    key={`${item.type}:${item.id}`}
+                    key={key}
                     className="sermon-deck-row"
                   >
                     <span className="sermon-deck-position" aria-hidden="true">
@@ -444,7 +448,7 @@ export function SermonDeckPanel() {
                         className="sermon-deck-entry sermon-deck-edit"
                         aria-label={`Edit custom slide ${ref}`}
                         onClick={() => {
-                          setEditingId(item.id);
+                          setEditingId(key);
                           setEditorOpen(true);
                         }}
                       >
@@ -453,7 +457,11 @@ export function SermonDeckPanel() {
                     ) : (
                       <span className="sermon-deck-entry">{entryInner}</span>
                     )}
-                    <SlideNotesField item={item} label={ref} />
+                    <SlideNotesButton
+                      hasNotes={(item.notes?.length ?? 0) > 0}
+                      label={ref}
+                      onOpen={() => setNotesKey(key)}
+                    />
                     </div>
                     <span className="sermon-deck-actions">
                       <button
@@ -476,9 +484,17 @@ export function SermonDeckPanel() {
                       </button>
                       <button
                         type="button"
+                        className="sermon-deck-btn"
+                        aria-label={`Duplicate ${ref}`}
+                        onClick={() => duplicateDeckItem(index)}
+                      >
+                        <CopyIcon />
+                      </button>
+                      <button
+                        type="button"
                         className="sermon-deck-btn sermon-deck-btn-remove"
                         aria-label={`Remove ${ref} from the deck`}
-                        onClick={() => removeFromDeck(item.id)}
+                        onClick={() => removeFromDeck(key)}
                       >
                         <CloseIcon />
                       </button>
@@ -493,6 +509,17 @@ export function SermonDeckPanel() {
             <OutlineTab />
           )}
         </div>
+      )}
+      {notesItem !== null && (
+        <SlideNotesEditor
+          // Remount per target so the draft always starts from that
+          // slide's current notes.
+          key={deckKey(notesItem)}
+          slideLabel={notesLabel}
+          initialNotes={notesItem.notes ?? ""}
+          onSave={onSaveNotes}
+          onCancel={closeNotes}
+        />
       )}
     </div>
   );

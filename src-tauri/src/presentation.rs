@@ -43,7 +43,7 @@ pub enum Slide {
 /// time with the deck so the presenter window can show it without
 /// depending on the main window's JavaScript. Never rendered by the
 /// audience stage.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OutlineSection {
     pub id: String,
     pub heading: String,
@@ -83,6 +83,9 @@ pub struct PresentationInner {
     /// material for the presenter window only. The audience stage
     /// receives it in the same payload but never renders it.
     pub outline: Vec<OutlineSection>,
+    /// True between present and exit: gates `sync_presenting_deck` so
+    /// deck edits made while not presenting change nothing.
+    pub presenting: bool,
 }
 
 impl Default for PresentationInner {
@@ -93,6 +96,7 @@ impl Default for PresentationInner {
             background: DEFAULT_BACKGROUND.to_string(),
             theme: "light".to_string(),
             outline: Vec::new(),
+            presenting: false,
         }
     }
 }
@@ -248,9 +252,10 @@ pub fn present_deck(
         s.background = background;
         s.outline = outline;
         s.theme = theme;
+        s.presenting = true;
     }
     show_stage(app, monitor.as_ref())?;
-    show_presenter(app, monitor.as_ref());
+    show_presenter(app);
     Ok(())
 }
 
@@ -275,9 +280,10 @@ pub fn present_single(
         s.background = background;
         s.outline = outline;
         s.theme = theme;
+        s.presenting = true;
     }
     show_stage(app, monitor.as_ref())?;
-    show_presenter(app, monitor.as_ref());
+    show_presenter(app);
     Ok(())
 }
 
@@ -305,10 +311,10 @@ pub fn create_stage_window(app: &tauri::AppHandle) {
 }
 
 /// Size of the presenter window: a normal windowed control panel —
-/// never fullscreen. It lives on the speaker's screen while the stage
-/// owns the picked display — except on a single shared screen, where it
-/// must float above the fullscreen stage to be visible at all (see
-/// `show_presenter`).
+/// never fullscreen, never always-on-top. It lives on the speaker's
+/// screen while the stage owns the picked display; on a shared screen
+/// all three windows are ordinary windows, so Alt+Tab cycles them
+/// PowerPoint-style.
 const PRESENTER_W: i32 = 1020;
 const PRESENTER_H: i32 = 740;
 
@@ -350,33 +356,14 @@ fn presenter_placement(app: &tauri::AppHandle) -> tauri::Position {
     tauri::Position::Physical(tauri::PhysicalPosition::new(80, 80))
 }
 
-/// Whether the presenter would paint under the fullscreen stage: both
-/// windows on the same monitor. The stage is fullscreen and
-/// always-on-top, so a same-screen presenter (e.g. one laptop display)
-/// must itself stay on top to be visible at all. When either position is
-/// unknown, fall back to the monitor count.
-fn presenter_shares_stage_monitor(
-    main_pos: Option<(i32, i32)>,
-    stage_pos: Option<(i32, i32)>,
-    monitor_count: usize,
-) -> bool {
-    match (main_pos, stage_pos) {
-        (Some(a), Some(b)) => a == b,
-        _ => monitor_count <= 1,
-    }
-}
-
 /// Open the presenter window on the app's own screen. The pre-warmed
 /// window is repositioned every present (the main window may have moved
 /// to another screen since); the fallback rebuild only runs if the
 /// pre-warm failed. The presenter takes focus — the stage needs none,
 /// its keys mirror the presenter's through the backend-owned index.
-///
-/// When the presenter shares its screen with the stage (a single laptop
-/// display, or the picked display itself), it floats above the
-/// fullscreen stage — otherwise it would be invisible underneath it.
-/// With separate screens it stays a normal window.
-pub fn show_presenter(app: &tauri::AppHandle, monitor: Option<&MonitorTarget>) {
+/// An ordinary window throughout: nothing here is topmost, so Alt+Tab
+/// between main, presenter, and stage always works.
+pub fn show_presenter(app: &tauri::AppHandle) {
     let position = presenter_placement(app);
     let window = match app.get_webview_window("presenter") {
         Some(window) => window,
@@ -391,35 +378,6 @@ pub fn show_presenter(app: &tauri::AppHandle, monitor: Option<&MonitorTarget>) {
             }
         }
     };
-    let infos = monitor_infos(app);
-    let main_pos = app
-        .get_webview_window("main")
-        .and_then(|w| w.current_monitor().ok().flatten())
-        .map(|m| {
-            let pos = *m.position();
-            (pos.x, pos.y)
-        });
-    // The picked display when it still resolves, else wherever the stage
-    // window already is (no target means "don't move the stage").
-    let stage_pos = monitor
-        .and_then(|t| select_monitor(&infos, t))
-        .map(|m| (m.x, m.y))
-        .or_else(|| {
-            app.get_webview_window("presentation")
-                .and_then(|w| w.current_monitor().ok().flatten())
-                .map(|m| {
-                    let pos = *m.position();
-                    (pos.x, pos.y)
-                })
-        });
-    if presenter_shares_stage_monitor(main_pos, stage_pos, infos.len()) {
-        log_op("presenter always on top", window.set_always_on_top(true));
-    } else {
-        log_op(
-            "presenter not always on top",
-            window.set_always_on_top(false),
-        );
-    }
     log_op("presenter set_position", window.set_position(position));
     log_op("presenter show", window.show());
     log_op("presenter unminimize", window.unminimize());
@@ -512,15 +470,16 @@ fn place_on_monitor(
     );
 }
 
-/// Bring the stage above everything: shown, restored, focused, kept
-/// above the main window and taskbar while presenting (it is a projector
-/// stage), and fullscreen. Esc closes the window, so this never traps
-/// the user.
+/// Bring the stage up: shown, restored, focused, then borderless
+/// windowed fullscreen — never exclusive fullscreen (which would
+/// minimize itself when focus moves away), and deliberately never
+/// always-on-top: Alt+Tab to the main app or the presenter must work
+/// PowerPoint-style mid-sermon, which a topmost stage would block on a
+/// shared screen. Esc hides the pair, so this never traps the user.
 fn raise_stage(window: &tauri::WebviewWindow) {
     log_op("show", window.show());
     log_op("unminimize", window.unminimize());
     log_op("set_focus", window.set_focus());
-    log_op("set_always_on_top", window.set_always_on_top(true));
     // The fullscreen transition is the slowest part of presenting, and
     // Esc hides without leaving fullscreen — so only pay for it when
     // something actually left fullscreen.
@@ -635,6 +594,45 @@ pub fn presentation_move(app: tauri::AppHandle, delta: i32) -> StageState {
     stage_state_of(&s)
 }
 
+/// Replace the live deck + outline mid-presentation (see
+/// `sync_presenting_deck`): the current index is kept, clamped into the
+/// new deck — an emptied deck parks at 0 and both windows show their
+/// waiting state until slides come back. Background/theme are
+/// present-time snapshots and stay untouched here on purpose.
+fn apply_sync(s: &mut PresentationInner, deck: Vec<Slide>, outline: Vec<OutlineSection>) {
+    s.deck = deck;
+    s.outline = outline;
+    s.index = if s.deck.is_empty() {
+        0
+    } else {
+        s.index.min(s.deck.len() - 1)
+    };
+}
+
+/// Push open-sermon edits to a running presentation without restarting
+/// it: the main window calls this after every deck/outline mutation, and
+/// it no-ops unless a presentation is active — so edits made while not
+/// presenting cost one cheap round-trip and change nothing. Never shows,
+/// raises, or focuses any window (mid-sermon edits must not steal
+/// focus); it just updates state and pushes to both windows.
+#[tauri::command]
+pub fn sync_presenting_deck(
+    app: tauri::AppHandle,
+    deck: Vec<Slide>,
+    outline: Vec<OutlineSection>,
+) -> Result<(), String> {
+    {
+        let state = app.state::<PresentationState>();
+        let mut s = state_lock(&state);
+        if !s.presenting {
+            return Ok(());
+        }
+        apply_sync(&mut s, deck, outline);
+    }
+    emit_slide(&app);
+    Ok(())
+}
+
 /// Esc in either window: hide the stage AND the presenter, and return
 /// focus to the main window. Both hide instead of closing so the next
 /// Present reuses the pre-created windows instead of rebuilding them
@@ -642,6 +640,10 @@ pub fn presentation_move(app: tauri::AppHandle, delta: i32) -> StageState {
 /// hidden so re-presenting skips the slow mode transition.
 #[tauri::command]
 pub fn presentation_exit(app: tauri::AppHandle) {
+    {
+        let state = app.state::<PresentationState>();
+        state_lock(&state).presenting = false;
+    }
     if let Some(window) = app.get_webview_window("presentation") {
         log_op("hide", window.hide());
     }
@@ -836,29 +838,48 @@ mod tests {
     }
 
     #[test]
-    fn presenter_shares_screen_only_on_the_same_monitor() {
-        // One laptop display: same position either way.
-        assert!(presenter_shares_stage_monitor(
-            Some((0, 0)),
-            Some((0, 0)),
-            1
-        ));
-        // Stage on the projector, app on the laptop: separate screens.
-        assert!(!presenter_shares_stage_monitor(
-            Some((0, 0)),
-            Some((1920, 0)),
-            2
-        ));
-        // The picked display itself: same screen even with two connected.
-        assert!(presenter_shares_stage_monitor(
-            Some((0, 0)),
-            Some((0, 0)),
-            2
-        ));
-        // Unknown positions: fall back to the monitor count.
-        assert!(presenter_shares_stage_monitor(None, None, 1));
-        assert!(!presenter_shares_stage_monitor(None, None, 2));
-        assert!(!presenter_shares_stage_monitor(Some((0, 0)), None, 2));
+    fn apply_sync_replaces_deck_and_clamps_index() {
+        let outline_a = vec![OutlineSection {
+            id: "outline-a".into(),
+            heading: "Intro".into(),
+            body: "".into(),
+        }];
+        let mut s = PresentationInner {
+            deck: vec![
+                verse_slide(1, "Genesis 1:1", "In the beginning…"),
+                verse_slide(2, "Genesis 1:2", "And the earth…"),
+                verse_slide(3, "Genesis 1:3", "And God said…"),
+            ],
+            index: 1,
+            background: "classic-black".into(),
+            theme: "dark".into(),
+            outline: vec![],
+            presenting: true,
+        };
+        // Growing the deck keeps the index; snapshots stay untouched.
+        apply_sync(
+            &mut s,
+            vec![
+                verse_slide(1, "Genesis 1:1", "In the beginning…"),
+                verse_slide(2, "Genesis 1:2", "And the earth…"),
+                verse_slide(3, "Genesis 1:3", "And God said…"),
+                verse_slide(4, "Genesis 1:4", "And God saw…"),
+            ],
+            outline_a.clone(),
+        );
+        assert_eq!(s.index, 1);
+        assert_eq!(s.deck.len(), 4);
+        assert_eq!(s.outline, outline_a);
+        assert_eq!(s.background, "classic-black");
+        assert_eq!(s.theme, "dark");
+        // Shrinking past the index clamps to the new last slide.
+        apply_sync(&mut s, vec![verse_slide(9, "John 1:1", "In the beginning…")], vec![]);
+        assert_eq!(s.index, 0);
+        assert_eq!(s.deck.len(), 1);
+        // An emptied deck parks at 0; both windows show waiting state.
+        apply_sync(&mut s, vec![], vec![]);
+        assert_eq!(s.index, 0);
+        assert!(s.deck.is_empty());
     }
 
     #[test]

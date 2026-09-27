@@ -71,36 +71,50 @@ function normalizeNotes(value: unknown): string | undefined {
 }
 
 /**
+ * Pull the optional per-entry duplicate identity off a persisted deck
+ * item: a string when present, otherwise undefined so old decks load
+ * unchanged.
+ */
+function normalizeUid(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const clean = value.trim();
+  return clean.length === 0 ? undefined : clean;
+}
+
+/**
  * Normalize one persisted value to a deck item, or null when malformed.
  * Legacy verse entries (no `type` field) become `{ type: "verse", … }`
  * so old decks survive the union migration unchanged. Presenter notes
- * (when present) travel on whichever slide type carries them.
+ * (when present) travel on whichever slide type carries them, and
+ * duplicate identities survive the round trip the same way.
  */
 function normalizeDeckItem(value: unknown): SermonDeckItem | null {
   if (isCustomItem(value)) {
     const { id, title, body } = value;
-    const notes = normalizeNotes(
-      (value as unknown as Record<string, unknown>).notes,
-    );
+    const record = value as unknown as Record<string, unknown>;
+    const notes = normalizeNotes(record.notes);
+    const uid = normalizeUid(record.uid);
     return {
       type: "custom",
       id,
       ...(title === undefined ? {} : { title }),
       body,
       ...(notes === undefined ? {} : { notes }),
+      ...(uid === undefined ? {} : { uid }),
     };
   }
   if (isVerseItem(value)) {
     const { id, label, text } = value;
-    const notes = normalizeNotes(
-      (value as unknown as Record<string, unknown>).notes,
-    );
+    const record = value as unknown as Record<string, unknown>;
+    const notes = normalizeNotes(record.notes);
+    const uid = normalizeUid(record.uid);
     return {
       type: "verse",
       id,
       label,
       text,
       ...(notes === undefined ? {} : { notes }),
+      ...(uid === undefined ? {} : { uid }),
     };
   }
   return null;
