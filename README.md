@@ -6,6 +6,11 @@ A free, fully offline King James Version Bible for Windows. No account, no inter
 
 Go to [**Releases**](https://github.com/DanielPomboDev/kjv-bible-app/releases), download `KJV Bible_1.0.0_x64-setup.exe`, and run it.
 
+## Screenshots
+
+![Reading Genesis 1 with the book list and chapter grid](screenshots/reading.png)
+![Searching for "faith" across the whole Bible](screenshots/search.png)
+
 ## What you can do
 
 - **Read** all 66 books (31,102 verses). The app reopens where you left off.
