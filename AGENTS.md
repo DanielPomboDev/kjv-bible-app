@@ -23,8 +23,9 @@ clipboard cleanly formatted. No login, no internet, no cloud.
 src/            React frontend
   domain/       shared types (Book, Verse, etc.)
   services/     functions that call the Rust backend
-  store/        Zustand stores
+  store/        Zustand stores (selection, search, settings, sermonDeck)
   components/   UI components
+  presentation/ PresentationWindow, SlideView (fullscreen sermon mode)
   styles/       tokens.css + component styles
 src-tauri/      Rust backend
   src/
@@ -33,6 +34,23 @@ src-tauri/      Rust backend
     clipboard.rs
 data/           Bible source data + the generated database
 ```
+
+## Sermon / presentation mode rules
+
+1. The sermon deck (queued verses for presenting) is separate from verse
+   *selection* (used for clipboard copy) — don't reuse the same store for
+   both, they serve different purposes and can hold different verses at
+   once.
+2. "Present Now" from the right-click menu opens the fullscreen
+   presentation window immediately with just that one verse, regardless of
+   what's in the sermon deck.
+3. The presentation window always uses the stage tokens in
+   DESIGN-SYSTEM.md, never the app's normal light/dark theme.
+4. Keyboard controls in presentation mode: →/Space = next slide, ← =
+   previous slide, Esc = exit back to the normal app window. These must
+   work with no mouse involved.
+5. The sermon deck should persist across app restarts (so a sermon prepared
+   the night before is still there), the same way settings do.
 
 ## Rules (the important ones)
 
@@ -53,7 +71,7 @@ data/           Bible source data + the generated database
 ## Clipboard format (exact)
 
 One verse:
-`16 For God so loved the world...`
+`John 3:16 — For God so loved the world...`
 
 Multiple verses: same format, one per line, separated by a blank line,
 always in book/chapter/verse order.

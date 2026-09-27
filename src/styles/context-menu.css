@@ -1,0 +1,57 @@
+/*
+ * Verse right-click context menu — uses only tokens from tokens.css.
+ * Floating popover: surface + border + radius-lg + shadow-2, like the
+ * settings popover and copy toolbar.
+ */
+
+.verse-context-menu {
+  position: fixed;
+  z-index: 160;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-1);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  animation: verse-context-menu-pop var(--motion-base) var(--ease-out);
+  transform-origin: top left;
+}
+
+@keyframes verse-context-menu-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.verse-context-menu-item {
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) var(--ease-out),
+    color var(--motion-fast) var(--ease-out);
+}
+
+.verse-context-menu-item:hover {
+  background: var(--hover);
+  color: var(--accent);
+}
+
+.verse-context-menu-item:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
