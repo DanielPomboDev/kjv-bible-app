@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { presentDeck } from "../services/presentation";
 import { useSermonDeck } from "../store/sermonDeck";
+import { usePresentationBackground } from "../store/presentationBackground";
 import { useToast } from "../store/toast";
+import { BackgroundPicker } from "../presentation/BackgroundPicker";
+import { ArrowDownIcon, ArrowUpIcon, CloseIcon, DeckIcon } from "./icons";
 
 /**
  * The sermon deck panel: a stack button in the TopBar opening a popover
@@ -16,6 +19,7 @@ import { useToast } from "../store/toast";
  */
 export function SermonDeckPanel() {
   const [open, setOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const deck = useSermonDeck((s) => s.deck);
   const removeFromDeck = useSermonDeck((s) => s.removeFromDeck);
   const moveInDeck = useSermonDeck((s) => s.moveInDeck);
@@ -24,14 +28,19 @@ export function SermonDeckPanel() {
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape while open (focus may sit anywhere in the popover).
+  // When the background picker is open, Escape closes just the picker
+  // first; a second Escape closes the whole panel.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        if (pickerOpen) setPickerOpen(false);
+        else setOpen(false);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, pickerOpen]);
 
   // Close when clicking outside the popover or the stack button.
   useEffect(() => {
@@ -63,7 +72,12 @@ export function SermonDeckPanel() {
   const onPresent = useCallback(() => {
     if (deck.length > 0) {
       setOpen(false);
-      void presentDeck(deck).catch((e) => showToast(`Presentation failed: ${e}`));
+      // Snapshot the selected background so the stage renders the new
+      // look picked just before presenting.
+      const background = usePresentationBackground.getState().presetId;
+      void presentDeck(deck, background).catch((e) =>
+        showToast(`Presentation failed: ${e}`),
+      );
     }
   }, [deck, showToast]);
 
@@ -85,7 +99,7 @@ export function SermonDeckPanel() {
         onClick={() => setOpen((o) => !o)}
       >
         <span className="sermon-deck-toggle-icon" aria-hidden="true">
-          ☰
+          <DeckIcon />
         </span>
         {count > 0 && (
           <span className="sermon-deck-badge" aria-hidden="true">
@@ -96,19 +110,14 @@ export function SermonDeckPanel() {
       {open && (
         <div className="sermon-deck-panel" role="dialog" aria-label="Sermon deck">
           <div className="sermon-deck-header">
-            <span className="sermon-deck-title">Sermon Deck</span>
-            {count > 0 && (
-              <>
-                <span className="sermon-deck-count" aria-live="polite">
-                  {count} verse{count === 1 ? "" : "s"}
-                </span>
-                <button
-                  type="button"
-                  className="sermon-deck-present"
-                  onClick={onPresent}
-                >
-                  Present
-                </button>
+            <div className="sermon-deck-header-top">
+              <span className="sermon-deck-title">Sermon Deck</span>
+              <span className="sermon-deck-count" aria-live="polite">
+                {count === 0
+                  ? "Empty"
+                  : `${count} verse${count === 1 ? "" : "s"}`}
+              </span>
+              {count > 0 && (
                 <button
                   type="button"
                   className="sermon-deck-clear"
@@ -116,9 +125,31 @@ export function SermonDeckPanel() {
                 >
                   Clear
                 </button>
-              </>
-            )}
+              )}
+            </div>
+            <div className="sermon-deck-header-actions">
+              {count > 0 && (
+                <button
+                  type="button"
+                  className="sermon-deck-present"
+                  onClick={onPresent}
+                >
+                  Present
+                </button>
+              )}
+              <button
+                type="button"
+                className="sermon-deck-secondary"
+                aria-expanded={pickerOpen}
+                onClick={() => setPickerOpen((o) => !o)}
+              >
+                Background
+              </button>
+            </div>
           </div>
+          {pickerOpen && (
+            <BackgroundPicker onClose={() => setPickerOpen(false)} />
+          )}
           {count === 0 ? (
             <p className="sermon-deck-empty">
               No verses yet. Right-click a verse and choose “Add to Sermon
@@ -143,7 +174,7 @@ export function SermonDeckPanel() {
                       disabled={index === 0}
                       onClick={() => moveUp(index)}
                     >
-                      ↑
+                      <ArrowUpIcon />
                     </button>
                     <button
                       type="button"
@@ -152,7 +183,7 @@ export function SermonDeckPanel() {
                       disabled={index === count - 1}
                       onClick={() => moveDown(index)}
                     >
-                      ↓
+                      <ArrowDownIcon />
                     </button>
                     <button
                       type="button"
@@ -160,7 +191,7 @@ export function SermonDeckPanel() {
                       aria-label={`Remove ${entry.label} from the deck`}
                       onClick={() => removeFromDeck(entry.id)}
                     >
-                      ×
+                      <CloseIcon />
                     </button>
                   </span>
                 </li>

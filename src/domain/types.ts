@@ -63,12 +63,21 @@ export interface StageSlide {
 
 /**
  * Stage snapshot pushed from Rust (`presentation://slide` event and the
- * initial pull): the slides in order plus which one is current. A single
- * "Present Now" verse is a one-slide deck, so navigation is inert there.
+ * initial pull): the slides in order, which one is current, and which
+ * background preset to render. A single "Present Now" verse is a
+ * one-slide deck, so navigation is inert there.
  */
 export interface StageState {
   deck: StageSlide[];
   index: number;
+  /**
+   * Selected background preset id (see
+   * presentation/backgroundPresets.ts) — set at present time from the
+   * presentationBackgroundStore. The stage resolves it with
+   * `getBackgroundPreset`, which falls back to Classic Black for unknown
+   * or missing ids.
+   */
+  background: string;
 }
 
 /**

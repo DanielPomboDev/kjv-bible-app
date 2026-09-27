@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { presentNow } from "../services/presentation";
 import { useSermonDeck } from "../store/sermonDeck";
+import { usePresentationBackground } from "../store/presentationBackground";
 import { useToast } from "../store/toast";
 import type { ChapterVerse, SermonDeckEntry } from "../domain/types";
 
@@ -88,13 +89,18 @@ export function VerseContextMenu({
 
   const onPresentNow = useCallback(() => {
     // Open the fullscreen stage on this one verse only — the sermon deck
-    // is untouched (AGENTS.md, Sermon rule #2).
+    // is untouched (AGENTS.md, Sermon rule #2). The stage renders with
+    // whichever background preset is currently selected.
     if (verse) {
-      void presentNow({
-        id: verse.id,
-        label: `${verse.bookName} ${verse.chapter}:${verse.verse}`,
-        text: verse.text,
-      }).catch((e) => showToast(`Presentation failed: ${e}`));
+      const background = usePresentationBackground.getState().presetId;
+      void presentNow(
+        {
+          id: verse.id,
+          label: `${verse.bookName} ${verse.chapter}:${verse.verse}`,
+          text: verse.text,
+        },
+        background,
+      ).catch((e) => showToast(`Presentation failed: ${e}`));
     }
     onClose();
   }, [verse, showToast, onClose]);

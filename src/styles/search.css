@@ -52,8 +52,14 @@
 }
 
 .top-bar-search-icon {
-  font-size: var(--text-verse-number-size);
+  display: inline-flex;
+  flex-shrink: 0;
   color: var(--text-secondary);
+}
+
+.top-bar-search-icon svg {
+  width: var(--space-4);
+  height: var(--space-4);
 }
 
 .top-bar-search-placeholder {
@@ -151,8 +157,14 @@
 }
 
 .search-input-icon {
-  font-size: var(--text-body-size);
+  display: inline-flex;
+  flex-shrink: 0;
   color: var(--text-secondary);
+}
+
+.search-input-icon svg {
+  width: var(--space-4);
+  height: var(--space-4);
 }
 
 .search-input {

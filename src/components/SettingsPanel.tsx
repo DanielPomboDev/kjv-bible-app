@@ -5,6 +5,7 @@ import {
   type ReadingSize,
   type Theme,
 } from "../store/settings";
+import { MinusIcon, PlusIcon, SettingsIcon } from "./icons";
 
 const SIZE_LABELS: Record<ReadingSize, string> = {
   small: "Small",
@@ -82,7 +83,7 @@ export function SettingsPanel() {
         onClick={() => setOpen((o) => !o)}
       >
         <span className="settings-gear-icon" aria-hidden="true">
-          ⚙
+          <SettingsIcon />
         </span>
       </button>
       {open && (
@@ -125,7 +126,7 @@ export function SettingsPanel() {
                 disabled={readingSize === READING_SIZES[0]}
                 onClick={() => stepSize(-1)}
               >
-                −
+                <MinusIcon />
               </button>
               <span className="settings-value" aria-live="polite">
                 {SIZE_LABELS[readingSize]}
@@ -137,7 +138,7 @@ export function SettingsPanel() {
                 disabled={readingSize === READING_SIZES[READING_SIZES.length - 1]}
                 onClick={() => stepSize(1)}
               >
-                +
+                <PlusIcon />
               </button>
             </div>
           </div>

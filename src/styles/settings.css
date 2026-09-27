@@ -31,6 +31,15 @@
   background: var(--hover);
 }
 
+.settings-gear-icon {
+  display: inline-flex;
+}
+
+.settings-gear-icon svg {
+  width: var(--space-4);
+  height: var(--space-4);
+}
+
 .settings-gear:focus-visible,
 .settings-option:focus-visible,
 .settings-step:focus-visible {
@@ -123,6 +132,9 @@
 }
 
 .settings-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 28px;
   min-height: 28px;
   background: var(--background);
@@ -135,6 +147,11 @@
   transition:
     border-color var(--motion-fast) var(--ease-out),
     color var(--motion-fast) var(--ease-out);
+}
+
+.settings-step svg {
+  width: var(--space-4);
+  height: var(--space-4);
 }
 
 .settings-step:hover:not(:disabled) {

@@ -19,12 +19,20 @@
   background: none;
   border: none;
   border-radius: var(--radius-md);
-  font-size: var(--text-body-size);
   color: var(--text-secondary);
   cursor: pointer;
   transition:
     color var(--motion-fast) var(--ease-out),
     background-color var(--motion-fast) var(--ease-out);
+}
+
+.sermon-deck-toggle-icon {
+  display: inline-flex;
+}
+
+.sermon-deck-toggle-icon svg {
+  width: var(--space-4);
+  height: var(--space-4);
 }
 
 .sermon-deck-toggle:hover {
@@ -52,6 +60,7 @@
 .sermon-deck-toggle:focus-visible,
 .sermon-deck-clear:focus-visible,
 .sermon-deck-present:focus-visible,
+.sermon-deck-secondary:focus-visible,
 .sermon-deck-btn:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
@@ -63,7 +72,7 @@
   top: calc(100% + var(--space-2));
   right: 0;
   z-index: 150;
-  width: 320px;
+  width: 360px;
   display: flex;
   flex-direction: column;
   background: var(--surface);
@@ -86,12 +95,26 @@
   }
 }
 
+/* Header: two rows — a title row (label, count, Clear) above an
+   actions row (Present + Background) — so the controls never crush
+   together in one line. */
 .sermon-deck-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.sermon-deck-header-top {
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--border);
+}
+
+.sermon-deck-header-actions {
+  display: flex;
+  gap: var(--space-2);
 }
 
 .sermon-deck-title {
@@ -128,10 +151,12 @@
 
 /* Present: the panel's primary action, filled like "Copy Selected". */
 .sermon-deck-present {
-  padding: var(--space-1) var(--space-2);
+  flex: 1;
+  min-height: var(--space-8);
+  padding: var(--space-2) var(--space-3);
   background: var(--accent);
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   font-family: var(--font-ui);
   font-size: var(--text-verse-number-size);
   font-weight: 600;
@@ -147,18 +172,51 @@
   color: var(--accent);
 }
 
-.sermon-deck-empty {
-  margin: 0;
-  padding: var(--space-4);
+/* Background: secondary action beside Present — outlined, and tinted
+   while its picker section is open. */
+.sermon-deck-secondary {
+  flex: 1;
+  min-height: var(--space-8);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   font-family: var(--font-ui);
   font-size: var(--text-verse-number-size);
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast) var(--ease-out),
+    background-color var(--motion-fast) var(--ease-out);
+}
+
+.sermon-deck-secondary:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--hover);
+}
+
+.sermon-deck-secondary[aria-expanded="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.sermon-deck-empty {
+  margin: 0;
+  padding: var(--space-6);
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  line-height: 1.7;
   color: var(--text-secondary);
 }
 
 .sermon-deck-list {
   list-style: none;
   margin: 0;
-  padding: var(--space-1) 0;
+  padding: 0 0 var(--space-2);
   max-height: min(420px, calc(100vh - 160px));
   overflow-y: auto;
 }
@@ -166,8 +224,12 @@
 .sermon-deck-row {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.sermon-deck-row + .sermon-deck-row {
+  border-top: 1px solid var(--border);
 }
 
 .sermon-deck-row:hover {
@@ -217,8 +279,8 @@
 }
 
 .sermon-deck-btn {
-  width: var(--space-6);
-  height: var(--space-6);
+  width: var(--space-8);
+  height: var(--space-8);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -226,13 +288,16 @@
   background: none;
   border: none;
   border-radius: var(--radius-sm);
-  font-family: var(--font-ui);
-  font-size: var(--text-verse-number-size);
   color: var(--text-secondary);
   cursor: pointer;
   transition:
     color var(--motion-fast) var(--ease-out),
     background-color var(--motion-fast) var(--ease-out);
+}
+
+.sermon-deck-btn svg {
+  width: var(--space-4);
+  height: var(--space-4);
 }
 
 .sermon-deck-btn:hover:not(:disabled) {
