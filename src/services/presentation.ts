@@ -91,6 +91,21 @@ export function presentationMove(delta: 1 | -1): Promise<StageState> {
   return invoke<StageState>("presentation_move", { delta });
 }
 
+/**
+ * Live deck sync: push open-sermon edits to a running presentation
+ * without restarting it. Called after every deck/outline mutation; the
+ * backend no-ops unless a presentation is active, and never touches any
+ * window (no show/raise/focus — mid-sermon edits must not steal focus).
+ * Failures are swallowed: presenting continues on the last good deck
+ * and the next edit retries.
+ */
+export function syncPresentingDeck(
+  deck: readonly SermonDeckItem[],
+  outline: readonly OutlineSection[],
+): Promise<void> {
+  return invoke("sync_presenting_deck", { deck, outline });
+}
+
 /** Stage → backend: Esc — close the stage, back to the main window. */
 export function presentationExit(): Promise<void> {
   return invoke("presentation_exit");

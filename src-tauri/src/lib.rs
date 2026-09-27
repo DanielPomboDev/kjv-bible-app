@@ -27,7 +27,8 @@ pub fn run() {
             presentation::present_deck_command,
             presentation::present_now_command,
             presentation::presentation_move,
-            presentation::presentation_exit
+            presentation::presentation_exit,
+            presentation::sync_presenting_deck
         ])
         .on_window_event(|window, event| {
             // When the stage closes (Esc), hand focus back to the main

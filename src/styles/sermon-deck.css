@@ -323,8 +323,8 @@
   min-width: 0;
 }
 
-/* Column holding a slide's entry plus its private notes field, so the
-   notes toggle/textarea sits under the slide text while the position
+/* Column holding a slide's entry plus its notes button, so the
+   notes control sits under the slide text while the position
    number and reorder buttons keep their row alignment. */
 .sermon-deck-main {
   flex: 1;
@@ -334,9 +334,10 @@
   min-width: 0;
 }
 
-/* Presenter notes (AGENTS.md, Presenter notes rule #1): a small toggle
-   under each slide entry expanding a plain textarea. Notes are private
-   planning text — never rendered on the presentation stage. */
+/* Presenter notes (AGENTS.md, Presenter notes rule #1): a compact
+ * button under each slide entry opening the dedicated notes dialog.
+ * Notes are private planning text — never rendered on the
+ * presentation stage. */
 .sermon-deck-notes {
   display: flex;
   flex-direction: column;
@@ -364,12 +365,13 @@
 }
 
 .sermon-deck-notes-toggle:focus-visible,
-.sermon-deck-notes-input:focus-visible {
+.slide-notes-input:focus-visible,
+.slide-notes-actions button:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
-/* Dot marking slides that already carry notes while collapsed. */
+/* Dot marking slides that already carry notes. */
 .sermon-deck-notes-dot {
   width: 6px;
   height: 6px;
@@ -377,22 +379,102 @@
   background: var(--accent);
 }
 
-.sermon-deck-notes-input {
+/* Notes editor dialog: a centered modal like the monitor picker
+ * (scrim + surface panel, radius-lg, shadow-3), with a large textarea.
+ * Tokens only. */
+.slide-notes-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.slide-notes-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+}
+
+.slide-notes-panel {
+  position: relative;
+  z-index: 1;
+  width: min(520px, calc(100vw - 2 * var(--space-6)));
+  margin-top: var(--space-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+  animation: slide-notes-panel-pop var(--motion-base) var(--ease-out);
+}
+
+@keyframes slide-notes-panel-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.slide-notes-title {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-body-size);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.slide-notes-sub {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.slide-notes-input {
   width: 100%;
   box-sizing: border-box;
-  padding: var(--space-2) var(--space-3);
+  min-height: 220px;
+  padding: var(--space-3) var(--space-4);
   background: var(--background);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-family: var(--font-ui);
-  font-size: var(--text-verse-number-size);
-  line-height: 1.6;
+  font-size: var(--text-body-size);
+  line-height: 1.7;
   color: var(--text-primary);
   resize: vertical;
 }
 
-.sermon-deck-notes-input::placeholder {
+.slide-notes-input::placeholder {
   color: var(--text-secondary);
+}
+
+.slide-notes-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.slide-notes-hint {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide-notes-panel {
+    animation: none;
+  }
 }
 
 .sermon-deck-ref {

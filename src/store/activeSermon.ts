@@ -5,8 +5,10 @@ import type {
   Sermon,
   SermonDeckItem,
 } from "../domain/types";
+import { deckKey } from "../domain/types";
 import { loadLibraryState, isPresetId } from "./sermonStorage";
 import { useSermonLibrary } from "./sermonLibrary";
+import { syncPresentingDeck } from "../services/presentation";
 
 /**
  * The currently open sermon (AGENTS.md, Sermon library rules #1 & #3).
@@ -43,22 +45,30 @@ interface ActiveSermonState {
     body: string,
   ) => CustomSlideItem | null;
   /**
-   * Update a custom slide in place: title/body change, position and id
-   * stay. False when the id isn't a custom slide, or the body is blank.
+   * Update a custom slide in place: title/body change, position and
+   * identity stay. False when the key isn't a custom slide, or the body
+   * is blank.
    */
   updateCustomSlide: (
-    id: string,
+    key: string,
     title: string | undefined,
     body: string,
   ) => boolean;
   /** Remove one slide from the open sermon's deck (no-op if missing). */
-  removeFromDeck: (id: number | string) => void;
+  removeFromDeck: (key: string) => void;
+  /**
+   * Duplicate the slide at one 0-based index (verse or custom — the copy
+   * keeps content and notes, gets a fresh `uid`) and insert the copy
+   * right after the source. False when the index is invalid.
+   */
+  duplicateDeckItem: (index: number) => boolean;
   /**
    * Set (or clear) the private presenter notes on one slide (AGENTS.md,
-   * Presenter notes rule #1): verse or custom, found by id. Blank text
-   * clears the notes; anything else is stored trimmed. No-op if missing.
+   * Presenter notes rule #1): verse or custom, found by deck key. Blank
+   * text clears the notes; anything else is stored trimmed. No-op if
+   * missing.
    */
-  setSlideNotes: (id: number | string, notes: string) => void;
+  setSlideNotes: (key: string, notes: string) => void;
   /** Move the slide at one 0-based index to another; no-op if invalid. */
   moveInDeck: (fromIndex: number, toIndex: number) => void;
   /** Empty the open sermon's deck entirely. */
@@ -96,12 +106,33 @@ function loadActive(): Sermon {
   return sermons.find((s) => s.id === activeId) ?? sermons[0];
 }
 
+/**
+ * Fresh per-entry identity for a duplicated slide. Same timestamp +
+ * random scheme as custom/outline ids, in its own `dup-…` namespace so
+ * it can never equal a `type:id` fallback key (no colon).
+ */
+function newDuplicateUid(): string {
+  return `dup-${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
+}
+
 export const useActiveSermon = create<ActiveSermonState>()((set, get) => {
   // Set state and echo the new open sermon to the library (which
   // persists). The library never calls back, so this always terminates.
+  // Deck/outline edits additionally push to a running presentation, if
+  // any, so mid-sermon changes in the main window appear live in both
+  // windows without restarting: the reference comparison below skips
+  // title/background edits (same array refs), and the backend itself
+  // no-ops while not presenting. Fire-and-forget — a failed push just
+  // leaves the last good deck up, and the next edit retries.
   const commit = (sermon: Sermon) => {
+    const prev = get().sermon;
     set({ sermon });
     useSermonLibrary.getState().syncActive(sermon);
+    if (sermon.deck !== prev.deck || sermon.outline !== prev.outline) {
+      void syncPresentingDeck(sermon.deck, sermon.outline).catch(() => {});
+    }
   };
 
   return {
@@ -148,17 +179,36 @@ export const useActiveSermon = create<ActiveSermonState>()((set, get) => {
       return item;
     },
 
-    removeFromDeck: (id) => {
+    removeFromDeck: (key) => {
       const { sermon } = get();
-      const deck = sermon.deck.filter((e) => e.id !== id);
+      const deck = sermon.deck.filter((e) => deckKey(e) !== key);
       if (deck.length === sermon.deck.length) return;
       commit({ ...sermon, deck });
     },
 
-    setSlideNotes: (id, notes) => {
+    duplicateDeckItem: (index) => {
+      const { sermon } = get();
+      if (index < 0 || index >= sermon.deck.length) return false;
+      // Exact copy — content and notes — with a fresh identity, so the
+      // two entries edit and remove independently even when they share
+      // the same verse `id`. (Narrowed per type so `id` keeps its
+      // number/string type instead of widening on a union spread.)
+      const source = sermon.deck[index];
+      const uid = newDuplicateUid();
+      const copy: SermonDeckItem =
+        source.type === "verse"
+          ? { ...source, uid }
+          : { ...source, uid };
+      const deck = [...sermon.deck];
+      deck.splice(index + 1, 0, copy);
+      commit({ ...sermon, deck });
+      return true;
+    },
+
+    setSlideNotes: (key, notes) => {
       const clean = notes.trim();
       const { sermon } = get();
-      const index = sermon.deck.findIndex((e) => e.id === id);
+      const index = sermon.deck.findIndex((e) => deckKey(e) === key);
       if (index === -1) return;
       const current = sermon.deck[index];
       const currentNotes = current.notes ?? "";
@@ -174,23 +224,28 @@ export const useActiveSermon = create<ActiveSermonState>()((set, get) => {
       commit({ ...sermon, deck });
     },
 
-    updateCustomSlide: (id, title, body) => {
+    updateCustomSlide: (key, title, body) => {
       const cleanBody = body.trim();
       if (cleanBody.length === 0) return false;
       const { sermon } = get();
       const index = sermon.deck.findIndex(
-        (e) => e.type === "custom" && e.id === id,
+        (e) => e.type === "custom" && deckKey(e) === key,
       );
       if (index === -1) return false;
       const deck = [...sermon.deck];
       const previous = deck[index];
+      // Narrow for the compiler (the findIndex above already ensures a
+      // custom slide — deck identity is era-agnostic here).
+      if (previous.type !== "custom") return false;
       deck[index] = {
         type: "custom",
-        id,
+        id: previous.id,
         ...(title !== undefined ? { title } : {}),
         body: cleanBody,
-        // Notes belong to the slide, not the title/body edit — keep them.
+        // Notes and duplicate identity belong to the entry, not the
+        // title/body edit — keep them.
         ...(previous.notes !== undefined ? { notes: previous.notes } : {}),
+        ...(previous.uid !== undefined ? { uid: previous.uid } : {}),
       };
       commit({ ...sermon, deck });
       return true;

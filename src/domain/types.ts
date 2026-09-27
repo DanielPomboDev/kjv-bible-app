@@ -50,6 +50,13 @@ export interface VerseSlideItem {
   /** Verse text as it appears in the reader. */
   text: string;
   /**
+   * Per-entry identity, present only on duplicates: two deck entries
+   * may share the same verse `id` (the same verse twice), so rows and
+   * edits key off `deckKey`, not `id`. Absent on entries created before
+   * duplication existed — they fall back to `type:id`.
+   */
+  uid?: string;
+  /**
    * Optional private presenter notes (AGENTS.md, Presenter notes rule
    * #1): editable from the deck panel, never rendered on the audience
    * presentation window.
@@ -72,6 +79,11 @@ export interface CustomSlideItem {
   /** Required body text. */
   body: string;
   /**
+   * Per-entry identity, present only on duplicates (see VerseSlideItem).
+   * Fresh custom slides use their unique `id` and carry no `uid`.
+   */
+  uid?: string;
+  /**
    * Optional private presenter notes (AGENTS.md, Presenter notes rule
    * #1): editable from the deck panel, never rendered on the audience
    * presentation window.
@@ -91,6 +103,18 @@ export type SermonDeckEntry = VerseSlideItem;
 
 /** Alias for contexts where "slide item" reads better than "deck item". */
 export type SlideItem = SermonDeckItem;
+
+/**
+ * Stable per-entry deck identity for rows and edits: the duplicate
+ * `uid` when present, else `type:id`. Entries created before
+ * duplication existed have no `uid`, and fresh (non-duplicate) entries
+ * never get one — both fall back to `type:id`, which is unique for
+ * those. Never use bare `id` to find or key a deck row: duplicated
+ * verses share it.
+ */
+export function deckKey(item: SermonDeckItem): string {
+  return item.uid ?? `${item.type}:${item.id}`;
+}
 
 /**
  * One outline section for sermon planning (AGENTS.md, Outline rules
