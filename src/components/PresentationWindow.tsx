@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   fetchStageState,
   onSlide,
@@ -14,10 +14,12 @@ import { SlideView } from "./SlideView";
  * slide with stage tokens (never the app's light/dark theme).
  *
  * Two windows share one frontend build; main.tsx routes to this
- * component when the window label is "presentation". The stage is fully
- * keyboard-driven — →/Space next, ← previous, Esc exits — and shows a
- * single verse verbatim when opened via "Present Now" (that verse is a
- * one-slide deck on the backend, so navigation is inert by bounds).
+ * component when the window label is "presentation". The stage is
+ * keyboard-driven — →/Space next, ← previous, Esc exits — with
+ * click-anywhere as a synonym for next and no visible controls; it shows
+ * a single verse verbatim when opened via "Present Now" (that verse is a
+ * one-slide deck on the backend, so → past it closes the stage while ←
+ * stays inert by bounds). The verse auto-fits its box (see SlideView).
  */
 export function PresentationWindow() {
   const [stage, setStage] = useState<StageState | null>(null);
@@ -51,6 +53,18 @@ export function PresentationWindow() {
     };
   }, []);
 
+  // Advance: →/Space/click go to the next slide, closing the stage past
+  // the last one (that is what makes → on a one-slide "Present Now" verse
+  // exit). The "last?" check uses backend-driven state (move responses +
+  // slide pushes). One shared path so keys and click can never disagree.
+  const advance = useCallback(() => {
+    if (stage && stage.index >= stage.deck.length - 1) {
+      void presentationExit().catch(() => {});
+    } else {
+      void presentationMove(1).then(setStage).catch(() => {});
+    }
+  }, [stage]);
+
   // Keyboard: →/Space next, ← previous, Esc exits. Must work with no
   // mouse (AGENTS.md sermon rule #4). Space only advances, never scrolls
   // — there is nothing to scroll on a slide.
@@ -58,7 +72,7 @@ export function PresentationWindow() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === " ") {
         e.preventDefault();
-        void presentationMove(1).then(setStage).catch(() => {});
+        advance();
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
         void presentationMove(-1).then(setStage).catch(() => {});
@@ -69,12 +83,14 @@ export function PresentationWindow() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [advance]);
 
   const current: StageSlide | null = stage?.deck[stage.index] ?? null;
 
+  // No buttons or toolbar on the slide itself — click anywhere advances,
+  // same as →/Space (and closes past the last slide).
   return (
-    <div className="stage">
+    <div className="stage" onClick={advance}>
       <SlideView slide={current} />
     </div>
   );

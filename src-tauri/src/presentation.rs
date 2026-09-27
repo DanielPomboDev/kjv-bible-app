@@ -18,7 +18,8 @@ pub struct Slide {
 #[derive(Default)]
 pub struct PresentationInner {
     /// Slides in presentation order. A single "Present Now" verse is a
-    /// one-slide deck, so →/Space/← are naturally inert (bounds); it
+    /// one-slide deck, so ← is naturally inert by bounds (→ past the
+    /// single slide closes the stage — see the frontend key handler); it
     /// deliberately ignores the sermon deck — AGENTS.md rule #2.
     pub deck: Vec<Slide>,
     /// 0-based index into `deck`.
@@ -80,7 +81,8 @@ pub fn present_deck(app: &tauri::AppHandle, deck: Vec<Slide>, index: usize) -> R
 /// Point the stage at a single one-off verse ("Present Now"): the stage
 /// shows exactly that verse and nothing else — the sermon deck is never
 /// consulted or modified (AGENTS.md, Sermon rule #2). Modeled as a
-/// one-slide deck so →/Space/← are inert by bounds, not by a special case.
+/// one-slide deck: ← is inert by bounds, and → past the single slide
+/// closes the stage (the frontend exits when showing the last slide).
 pub fn present_single(app: &tauri::AppHandle, slide: Slide) -> Result<(), String> {
     {
         let state = app.state::<PresentationState>();

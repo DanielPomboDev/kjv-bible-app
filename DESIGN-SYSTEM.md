@@ -43,6 +43,9 @@ same slide is shown no matter what theme the main window uses.
   --stage-font-reading: "Source Serif 4", Georgia, serif;
   --stage-font-ui: -apple-system, "Segoe UI", sans-serif;
   --stage-text-size: clamp(2.5rem, 7.5vmin, 9rem);
+  /* Floor for the verse auto-fit: long verses shrink from --stage-text-size
+     toward this instead of overflowing; short verses stay at the max. */
+  --stage-text-min-size: 1.5rem;
   --stage-ref-size: clamp(1.125rem, 2.75vmin, 2.5rem);
   /* Slide padding is a scale step (48px) plus a viewport share so very
      large screens keep comfortable margins. */
@@ -52,8 +55,12 @@ same slide is shown no matter what theme the main window uses.
 
 Layout: one verse per slide — verse text centered both axes, `line-height`
 1.35 (tighter than the reader's 1.7 — a slide is scanned, not read),
-reference smaller in `--stage-dim`, centered near the bottom. Keyboard:
-→/Space = next slide, ← = previous slide, Esc = exit.
+auto-fitted between `--stage-text-size` and `--stage-text-min-size` so
+short verses stay huge and long ones shrink instead of overflowing;
+reference smaller in `--stage-dim`, centered near the bottom, pinned there
+by the verse box taking all remaining space. No buttons or toolbar on the
+slide. Keyboard: →/Space = next slide, ← = previous slide, Esc = exit;
+click anywhere is a synonym for next.
 
 ## Colors (CSS variables)
 
