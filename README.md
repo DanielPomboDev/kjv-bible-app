@@ -1,6 +1,6 @@
 # KJV Bible
 
-A free, fully offline King James Version Bible for Windows. No account, no internet, no ads — just the Bible and tools for studying and preaching.
+A free, fully offline King James Version Bible for Windows. No account, no internet, no ads — just the Bible and tools for studying and preaching. **Free forever:** every feature in this app is free and always will be.
 
 ## Download
 
