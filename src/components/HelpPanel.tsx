@@ -13,6 +13,7 @@ const SECTIONS: { title: string; shortcuts: Shortcut[] }[] = [
       { keys: ["←", "→"], action: "Previous / next chapter" },
       { keys: ["Ctrl", "K"], action: "Search (words, phrases, John 3:16)" },
       { keys: ["F11"], action: "Toggle fullscreen" },
+      { keys: ["Esc"], action: "Exit fullscreen" },
     ],
   },
   {

@@ -167,19 +167,35 @@ function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [openSearch]);
 
-  // F11 toggles fullscreen (the app launches fullscreen — this is the
-  // way back out, and back in). Failure means we're running outside
-  // Tauri (plain browser dev); the config-set fullscreen still applies
-  // in the real app, so a failed toggle is a silent no-op.
+  // F11 toggles fullscreen; Esc exits fullscreen (the app no longer
+  // launches fullscreen — it launches maximized with normal window
+  // decorations, so the taskbar and minimize/maximize/close buttons stay
+  // visible. Esc is the escape hatch if the user does enter fullscreen).
+  // Failure means we're running outside Tauri (plain browser dev), so a
+  // failed toggle is a silent no-op.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "F11") return;
-      e.preventDefault();
-      const win = getCurrentWindow();
-      win
-        .isFullscreen()
-        .then((full) => win.setFullscreen(!full))
-        .catch(() => {});
+      if (e.key === "F11") {
+        e.preventDefault();
+        const win = getCurrentWindow();
+        win
+          .isFullscreen()
+          .then((full) => win.setFullscreen(!full))
+          .catch(() => {});
+        return;
+      }
+      if (e.key === "Escape") {
+        // Don't steal Esc from overlays/menus — they close themselves on
+        // the same keypress. Just also leave fullscreen so a fullscreen
+        // window can never trap the user without visible controls.
+        const win = getCurrentWindow();
+        win
+          .isFullscreen()
+          .then((full) => {
+            if (full) return win.setFullscreen(false);
+          })
+          .catch(() => {});
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
