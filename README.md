@@ -35,4 +35,4 @@ Found a bug or want a feature? [Open an issue](https://github.com/DanielPomboDev
 
 ---
 
-*For developers: run `npx tauri dev` after `npm install`; build with `npx tauri build`. See `project notes` and `the style guide` for conventions.*
+*For developers: run `npx tauri dev` after `npm install`; build with `npx tauri build`.*

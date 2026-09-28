@@ -56,8 +56,7 @@ export function VerseContextMenu({
     return () => document.removeEventListener("mousedown", onDocMouseDown, true);
   }, [verse, onClose]);
 
-  // Esc closes (per project notes, keyboard must work too); scroll/resize
-  // close because the menu is fixed-position and the anchor moves.
+  // Esc closes (keyboard must work too); scroll/resize close because the menu is fixed-position and the anchor moves.
   useEffect(() => {
     if (!verse) return;
     const onKey = (e: KeyboardEvent) => {
@@ -89,7 +88,7 @@ export function VerseContextMenu({
 
   const onPresentNow = useCallback(() => {
     // Open the fullscreen stage on this one verse only — the sermon deck
-    // is untouched (Sermon rule #2). The stage renders with
+    // is untouched. The stage renders with
     // the open sermon's background preset, and the presenter window gets
     // the open sermon's outline for reference. The monitor gate (picker,
     // or the single-display notes warning) runs before the stage opens —

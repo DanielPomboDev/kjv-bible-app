@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * Custom slide editor (Custom slide rule #2): deliberately
- * plain — a title field (optional) and a body field (required), plus
+ * Custom slide editor: deliberately plain — a title field (optional) and a body field (required), plus
  * Save/Cancel. No formatting toolbar, no images, no layouts in v1.
  *
- * Doubles as the edit form (rule #5): `initialTitle`/`initialBody`
- * pre-fill the fields and `saveLabel` becomes "Save Changes", while the
+ * Doubles as the edit form: `initialTitle`/`initialBody` pre-fill the
+ * fields and `saveLabel` becomes "Save Changes", while the
  * default empty values and "Add Slide" label serve new slides. The panel
  * remounts the editor (via `key`) each time it opens, so the initial
  * values are always fresh. Save is disabled until the body has

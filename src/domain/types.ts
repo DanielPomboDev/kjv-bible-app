@@ -57,16 +57,14 @@ export interface VerseSlideItem {
    */
   uid?: string;
   /**
-   * Optional private presenter notes (Presenter notes rule
-   * #1): editable from the deck panel, never rendered on the audience
-   * presentation window.
+   * Optional private presenter notes: editable from the deck panel,
+   * never rendered on the audience presentation window.
    */
   notes?: string;
 }
 
 /**
- * One custom slide in the sermon deck (Custom slide rules
- * #1–2): a sermon point/heading with an optional title and required
+ * One custom slide in the sermon deck: a sermon point/heading with an optional title and required
  * body text — no formatting, images, or layouts in v1. Its `id` is a
  * string so it can never collide with numeric verse ids; it is unique
  * within the deck.
@@ -84,9 +82,8 @@ export interface CustomSlideItem {
    */
   uid?: string;
   /**
-   * Optional private presenter notes (Presenter notes rule
-   * #1): editable from the deck panel, never rendered on the audience
-   * presentation window.
+   * Optional private presenter notes: editable from the deck panel,
+   * never rendered on the audience presentation window.
    */
   notes?: string;
 }
@@ -117,8 +114,7 @@ export function deckKey(item: SermonDeckItem): string {
 }
 
 /**
- * One outline section for sermon planning (Outline rules
- * #1–2): a heading plus plain body text — no formatting or images, same
+ * One outline section for sermon planning: a heading plus plain body text — no formatting or images, same
  * philosophy as custom slides. The outline is reference only: it is
  * never presented and lives apart from the deck of slides.
  */
@@ -132,8 +128,7 @@ export interface OutlineSection {
 }
 
 /**
- * A sermon: the top-level saved unit (Sermon library rule #1).
- * It bundles a title, a date, its outline (planning/reference only, never
+ * A sermon: the top-level saved unit. It bundles a title, a date, its outline (planning/reference only, never
  * presented), its deck (the ordered list of slide items — verses and
  * custom slides), and its chosen background preset id. Everything that
  * used to be one global sermon deck/background becomes a property of

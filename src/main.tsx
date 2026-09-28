@@ -11,7 +11,7 @@ initSettings();
 // Two windows share this frontend build: the main app and the borderless
 // fullscreen presentation stage (src-tauri/src/presentation.rs). The
 // stage renders its own UI with stage tokens only — never the app's
-// normal light/dark theme (Sermon rule #3).
+// normal light/dark theme.
 function windowLabel(): string {
   try {
     return getCurrentWindow().label;

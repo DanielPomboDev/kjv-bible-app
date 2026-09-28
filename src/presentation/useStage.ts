@@ -8,8 +8,9 @@ import {
 import type { StageState } from "../domain/types";
 
 /**
- * Shared stage state for the two presentation windows (project notes,
- * Presenter notes rules #2 & #6): the audience stage and the presenter
+ * Shared stage state for the two presentation windows (the audience
+ * stage never renders presenter notes, and keyboard navigation drives
+ * both windows in sync): the audience stage and the presenter
  * window run the same bootstrap (push listener first, then a direct
  * pull — no event-timing dependency) and the same navigation (the
  * backend owns the index and pushes to both windows, so →/Space/← in
@@ -82,9 +83,8 @@ export function useStage() {
 }
 
 /**
- * Keyboard navigation shared by both windows (project notes sermon rule #4,
- * presenter notes rule #6): →/Space next, ← previous, Esc exits — with
- * no mouse involved.
+ * Keyboard navigation shared by both windows: →/Space next, ← previous,
+ * Esc exits — with no mouse involved.
  *
  * Space is skipped when focus sits on an interactive element (button,
  * input, …) so it keeps its native meaning there (e.g. activating the

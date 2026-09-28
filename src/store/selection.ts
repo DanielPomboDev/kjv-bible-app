@@ -5,7 +5,7 @@ import { create } from "zustand";
  * or searching never disturbs the selection, and the copy toolbar (a
  * later feature) can read it directly.
  *
- * Click semantics (the style guide):
+ * Click semantics:
  * - plain click       → select just that verse (or deselect if it was
  *                        the only selection)
  * - Ctrl/Cmd+click    → add/remove one verse, keeping the rest

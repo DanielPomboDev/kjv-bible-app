@@ -3,8 +3,7 @@ import { usePresentFlow } from "../store/presentFlow";
 import { monitorKey } from "../presentation/monitors";
 
 /**
- * The monitor gate before presenting (Presenter notes rules
- * #3–4): an App-level modal dialog, so both entry points — the deck
+ * The monitor gate before presenting: an App-level modal dialog, so both entry points — the deck
  * panel's Present button and the verse menu's Present Now — share one
  * picker instead of each growing their own.
  *

@@ -19,8 +19,7 @@ import { OutlineTab } from "../sermon/OutlineTab";
 import { ArrowDownIcon, ArrowUpIcon, CloseIcon, CopyIcon, DeckIcon } from "./icons";
 
 /**
- * Private presenter notes for one slide (Presenter notes rule
- * #1): a compact button under the slide entry showing whether notes
+ * Private presenter notes for one slide: a compact button under the slide entry showing whether notes
  * exist (dot marker). Clicking opens the dedicated notes editor dialog.
  * Notes are stored on the slide but never rendered on the audience
  * presentation window.
@@ -62,10 +61,8 @@ function SlideNotesButton({
  *
  * The Deck tab lists the queued slides in presentation order — reference
  * plus a short text preview per row, with up/down reorder buttons and a
- * remove button (project notes: keyboard must work, so everything is real
- * buttons). The Outline tab holds the sermon's planning sections
- * (Outline rules): ordered, editable, and never presented —
- * separate from the deck on purpose.
+ * remove button (everything is real buttons, so keyboard works). The Outline tab holds the sermon's planning sections
+ * (outline rules): ordered, editable, and never presented — separate from the deck on purpose.
  *
  * Mirrors SettingsPanel's popover behaviour: Escape or an outside click
  * closes it; styled with popover tokens (surface, radius-lg, shadow-2).
@@ -224,8 +221,7 @@ export function SermonDeckPanel() {
 
   const onSaveCustomSlide = useCallback(
     (title: string | undefined, body: string) => {
-      // Editing updates the slide in place (Custom slide
-      // rule #5) — never a duplicate entry. A refused save (blank body,
+      // Editing updates the slide in place — never a duplicate entry. A refused save (blank body,
       // or a slide removed mid-edit) toasts and leaves the editor open
       // so nothing is lost.
       if (editingId !== null) {

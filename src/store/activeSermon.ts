@@ -11,7 +11,7 @@ import { useSermonLibrary } from "./sermonLibrary";
 import { syncPresentingDeck } from "../services/presentation";
 
 /**
- * The currently open sermon (Sermon library rules #1 & #3).
+ * The currently open sermon — only one is open at a time.
  *
  * The outline, the deck, and the selected background preset id are
  * properties of one open `Sermon` (`sermon.outline`, `sermon.deck`,
@@ -73,8 +73,7 @@ interface ActiveSermonState {
    */
   duplicateDeckItem: (index: number) => boolean;
   /**
-   * Set (or clear) the private presenter notes on one slide (project notes,
-   * Presenter notes rule #1): verse or custom, found by deck key. Blank
+   * Set (or clear) the private presenter notes on one slide, verse or custom, found by deck key. Blank
    * text clears the notes; anything else is stored trimmed. No-op if
    * missing.
    */
@@ -86,8 +85,7 @@ interface ActiveSermonState {
   /** Select a background preset for the open sermon (unknown ids ignored). */
   setBackgroundPresetId: (id: string) => void;
   /**
-   * Append an outline section (Outline rule #3). The heading
-   * is required — returns the new section, or null when the heading is
+   * Append an outline section. The heading is required — returns the new section, or null when the heading is
    * blank. The body is plain text and may be empty.
    */
   addOutlineSection: (heading: string, body: string) => OutlineSection | null;
@@ -309,8 +307,7 @@ export const useActiveSermon = create<ActiveSermonState>()((set, get) => {
     },
 
     addOutlineSection: (heading, body) => {
-      // The heading is required (Outline rule #1: every
-      // section has a heading); the body is plain text and may be empty.
+      // The heading is required; the body is plain text and may be empty.
       const cleanHeading = heading.trim();
       if (cleanHeading.length === 0) return null;
       // String id in its own namespace, timestamp + random to stay unique

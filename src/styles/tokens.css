@@ -1,6 +1,7 @@
 /*
- * Design tokens — every value here comes from the style guide.
- * Components must use these variables, not raw colors/sizes.
+ * Design tokens — the single source of truth for colors, spacing,
+ * type, and motion. Components must use these variables, not raw
+ * colors/sizes.
  */
 
 :root[data-theme="light"] {
@@ -36,8 +37,8 @@
 }
 
 :root {
-  /* --- Presentation stage (theme-independent — see the style guide,
-     "Presentation window"; the stage must not follow light/dark). --- */
+  /* --- Presentation stage (theme-independent — the stage must not
+     follow light/dark). --- */
   /* Pure black: in a dark room the screen's edges disappear and the
      verse floats; maximum contrast for text on top. */
   --stage-bg: #000000;
@@ -80,7 +81,7 @@
   --radius-md: 8px;
   --radius-lg: 12px;
 
-  /* Shadows for floating surfaces only — see the style guide. */
+  /* Shadows for floating surfaces only. */
   --shadow-1: 0 1px 2px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.08);
   --shadow-2: 0 2px 6px rgb(0 0 0 / 0.08), 0 8px 24px rgb(0 0 0 / 0.14);
   --shadow-3: 0 4px 12px rgb(0 0 0 / 0.12), 0 16px 40px rgb(0 0 0 / 0.2);

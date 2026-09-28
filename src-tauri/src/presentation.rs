@@ -24,8 +24,7 @@ pub enum Slide {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         notes: Option<String>,
     },
-    /// A custom sermon slide (Custom slide rules): string `id`
-    /// in its own namespace (never collides with verse ids), optional
+    /// A custom sermon slide: string `id` in its own namespace (never collides with verse ids), optional
     /// `title`, required `body`.
     #[serde(rename = "custom")]
     Custom {
@@ -63,8 +62,7 @@ pub struct PresentationInner {
     /// Slides in presentation order. A single "Present Now" verse is a
     /// one-slide deck, so ← is naturally inert by bounds (→ past the
     /// single slide closes the stage — see the frontend key handler); it
-    /// deliberately ignores the sermon deck — project notes rule #2. Verse
-    /// and custom slides mix freely here; navigation is index-based, so
+    /// deliberately ignores the sermon deck. Verse and custom slides mix freely here; navigation is index-based, so
     /// both step through identically.
     pub deck: Vec<Slide>,
     /// 0-based index into `deck`.
@@ -76,8 +74,8 @@ pub struct PresentationInner {
     pub background: String,
     /// The app's light/dark theme at present time (`store/settings.ts`).
     /// The presenter window applies it so its chrome matches the main
-    /// app; the audience stage ignores it (stage tokens only — project notes,
-    /// Sermon rule #3). Normalized to "light"/"dark" on the way in.
+    /// app; the audience stage ignores it (stage tokens only).
+    /// Normalized to "light"/"dark" on the way in.
     pub theme: String,
     /// The open sermon's outline sections at present time — reference
     /// material for the presenter window only. The audience stage
@@ -155,8 +153,7 @@ fn normalize_theme(theme: Option<String>) -> String {
     }
 }
 
-/// One connected display, as listed for the monitor picker
-/// (Presenter notes rule #3). Positions are physical pixels
+/// One connected display, as listed for the monitor picker. Positions are physical pixels
 /// in the virtual desktop; the frontend persists its choice by name
 /// (falling back to position) and sends it back as `MonitorTarget`.
 #[derive(Debug, Clone, Serialize)]
@@ -261,8 +258,7 @@ pub fn present_deck(
 
 /// Point the stage at a single one-off verse ("Present Now"): the stage
 /// shows exactly that verse and nothing else — the sermon deck is never
-/// consulted or modified (Sermon rule #2). Modeled as a
-/// one-slide deck: ← is inert by bounds, and → past the single slide
+/// consulted or modified. Modeled as a one-slide deck: ← is inert by bounds, and → past the single slide
 /// closes the stage (the frontend exits when showing the last slide).
 pub fn present_single(
     app: &tauri::AppHandle,
@@ -340,8 +336,7 @@ fn build_presenter(app: &tauri::AppHandle) -> Result<tauri::WebviewWindow, tauri
         .build()
 }
 
-/// Where the presenter window goes (Presenter notes rule #3):
-/// centered on the monitor holding the main window — i.e. the screen the
+/// Where the presenter window goes: centered on the monitor holding the main window — i.e. the screen the
 /// picker was opened from — never the picked presentation display.
 fn presenter_placement(app: &tauri::AppHandle) -> tauri::Position {
     if let Some(main) = app.get_webview_window("main") {
@@ -430,8 +425,7 @@ fn show_stage(app: &tauri::AppHandle, monitor: Option<&MonitorTarget>) -> Result
     }
 }
 
-/// Move the stage window onto the picked monitor (Presenter
-/// notes rule #3) before it goes fullscreen — fullscreen lands on
+/// Move the stage window onto the picked monitor before going fullscreen — it lands on
 /// whichever monitor holds the window, so positioning first is the whole
 /// trick. A no-op when the target isn't connected anymore or the window
 /// is already there (avoids a flicker + a needless fullscreen cycle on
@@ -499,7 +493,7 @@ fn log_op(op: &str, result: Result<(), tauri::Error>) {
 /// Push the current slide to the stage AND the presenter. Both windows
 /// register the same listener first, then pull — pushes keep already-open
 /// windows in sync either way. The backend owns the index, so →/Space/←
-/// in either window drives both (Presenter notes rule #6).
+/// in either window drives both.
 fn emit_slide(app: &tauri::AppHandle) {
     let state = app.state::<PresentationState>();
     let payload = {

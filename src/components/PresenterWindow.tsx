@@ -8,8 +8,7 @@ import {
 import { useStage, useStageKeys } from "../presentation/useStage";
 
 /**
- * The presenter window (Presenter notes rules #2, #5–6): a
- * normal windowed panel that opens on the screen the app is running on
+ * The presenter window: a normal windowed panel that opens on the screen the app is running on
  * while the audience stage goes fullscreen on the picked display. It
  * shows the current slide (small preview), the next slide, the current
  * slide's private notes, and the sermon's outline for a glance — and
@@ -73,8 +72,7 @@ export function PresenterWindow() {
   const { stage, advance, back, exit } = useStage();
   useStageKeys({ advance, back, exit });
 
-  // One-time Extend reminder (Presenter notes rule #5):
-  // mirrored displays defeat the whole two-window separation, and no
+  // One-time Extend reminder: mirrored displays defeat the whole two-window separation, and no
   // application can override that — so say it once, then remember.
   const [extendSeen, setExtendSeen] = useState(loadExtendReminderSeen);
   useEffect(() => {

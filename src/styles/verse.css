@@ -1,7 +1,7 @@
 /* Reading pane + Verse — uses only tokens from tokens.css */
 
 /* The top bar is fixed; the chapter text scrolls in a centered column
-   underneath it (see Layout in the style guide). */
+   underneath it. */
 
 .reading-pane {
   flex: 1;
@@ -48,8 +48,8 @@
 }
 
 /* Verses read as printed Bibles: each verse is its own block — verse
-   number, text, then a break before the next. Hover/selection styles
-   follow the style guide's selection states, with soft rounded tints. */
+   number, text, then a break before the next. Hover/selection use soft
+   rounded tints. */
 .verse {
   display: block;
   margin-bottom: var(--space-3);

@@ -1,6 +1,5 @@
 /*
- * MonitorPicker — the pre-present display gate (Presenter
- * notes rules #3–4). A centered modal like the search overlay (scrim +
+ * MonitorPicker — the pre-present display gate. A centered modal like the search overlay (scrim +
  * surface panel, radius-lg, shadow-3); buttons reuse the sermon deck's
  * Present/secondary styles. Tokens only.
  */
@@ -137,8 +136,8 @@
   background: var(--surface);
 }
 
-/* Single-display warning (Presenter notes rule #4): tinted
-   so it reads as a warning, not body copy. */
+/* Single-display warning: tinted so it reads as a warning, not body
+   copy. */
 .monitor-warning {
   margin: 0;
   padding: var(--space-3) var(--space-4);

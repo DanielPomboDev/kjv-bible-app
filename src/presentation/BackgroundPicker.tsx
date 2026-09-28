@@ -2,8 +2,7 @@ import { BACKGROUND_PRESETS } from "./backgroundPresets";
 import { useActiveSermon } from "../store/activeSermon";
 
 /**
- * Background picker (Slide background rule #5): a grid of 10
- * small preview swatches, one per preset, each showing its actual
+ * Background picker: a grid of 10 small preview swatches, one per preset, each showing its actual
  * background so it's recognizable at a glance. Clicking (or Enter/Space
  * on) a swatch selects that preset on the currently open sermon
  * (`sermon.backgroundPresetId`) and closes the picker via `onClose`.

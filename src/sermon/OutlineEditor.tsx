@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * Outline section editor (Outline rules #1–2): deliberately
- * plain — a heading field (required) and a body field (plain text,
+ * Outline section editor: deliberately plain — a heading field (required) and a body field (plain text,
  * optional), plus Save/Cancel. No formatting toolbar, no images, same
  * philosophy as custom slides. The outline is planning/reference only
  * and is never presented.

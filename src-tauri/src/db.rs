@@ -375,7 +375,7 @@ mod tests {
             }
         }
         assert_eq!(total_chapters, 1189);
-        // project notes: after importing, 66 books / 31,102 verses confirms nothing is missing.
+        // After importing, 66 books / 31,102 verses confirms nothing is missing.
         assert_eq!(total_verses, 31_102);
     }
 }

@@ -9,14 +9,12 @@ import { SlideView } from "./SlideView";
 import { CustomSlideView } from "./CustomSlideView";
 
 /**
- * The presentation stage (Sermon rules #2–4): a borderless
- * fullscreen window, separate from the main app, showing one slide at a
+ * The presentation stage: a borderless fullscreen window, separate from the main app, showing one slide at a
  * time — a verse slide or a custom slide — with stage tokens (never the
  * app's light/dark theme).
  *
  * The slide look comes from whichever background preset was selected when
- * presenting (Slide background rule #3): the preset id travels
- * with the stage state from the Rust backend, and is resolved here with
+ * presenting: the preset id travels with the stage state from the Rust backend, and is resolved here with
  * `getBackgroundPreset` — background, verse text color, and reference
  * color all come from the preset via inline style overrides of the stage
  * tokens, never a fixed style. Unknown or missing ids fall back to

@@ -7,8 +7,7 @@ Source: https://github.com/scrollmapper/bible_databases, branch `2024`
   - csv/key_english.csv books:  field, name, testament, field  (columns are
                         unnamed; positionally: number, name, testament, genre)
 
-Output schema matches project notes exactly:
-  books, verses, verses_fts (FTS5, external-content).
+Output schema: books, verses, verses_fts (FTS5, external-content).
 
 Usage:
   python data/import_kjv.py /path/to/bible_databases
@@ -88,7 +87,7 @@ def main() -> None:
     # The source contains exactly one placeholder row, 3 John 1:15
     # (id 64001015) with text "[]" — 3 John has 14 verses in the KJV, so
     # this row marks a verse that does not exist. It is not scripture and
-    # we do not invent text for it (project notes rule 1); we skip it.
+    # Bible text is never invented or "fixed"; we skip it.
     skipped = []
     verses = []
     for r in verse_rows:

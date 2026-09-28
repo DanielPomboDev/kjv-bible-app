@@ -9,16 +9,15 @@ import {
 import { OutlineEditor } from "./OutlineEditor";
 
 /**
- * The outline tab of the sermon panel (Outline rules): the
- * open sermon's ordered planning sections — heading plus a plain-text
+ * The outline tab of the sermon panel: the open sermon's ordered planning sections — heading plus a plain-text
  * body preview per row, with up/down reorder buttons, a remove button,
  * and click-to-edit (keyboard: Enter/Space on the row). An "Add Section"
  * button opens the editor for a fresh section.
  *
- * Separate from the deck of slides on purpose (rule #2): sections are
- * never presented, and nothing here touches `sermon.deck`. Editing a
- * section updates it in place, like custom slides (rule #3). Everything
- * is a real button, so keyboard works throughout.
+ * Separate from the deck of slides on purpose: sections are never
+ * presented, and nothing here touches `sermon.deck`. Editing a section
+ * updates it in place, like custom slides. Everything is a real button,
+ * so keyboard works throughout.
  */
 export function OutlineTab() {
   const outline = useActiveSermon((s) => s.sermon.outline);

@@ -19,8 +19,7 @@ import { useToast } from "./toast";
 import { useSettings } from "./settings";
 
 /**
- * The gate before every fullscreen present (Presenter notes
- * rules #3–4). Both entry points — the deck panel's Present button and
+ * The gate before every fullscreen present. Both entry points — the deck panel's Present button and
  * the verse menu's Present Now — come through `requestPresent` instead
  * of invoking the backend directly:
  *

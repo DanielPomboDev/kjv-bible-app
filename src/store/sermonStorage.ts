@@ -11,7 +11,7 @@ import {
 } from "../presentation/backgroundPresets";
 
 /**
- * Pure sermon persistence helpers (Sermon library rules #2–4).
+ * Pure sermon persistence helpers.
  *
  * The library is one localStorage record — the same mechanism settings
  * use (`store/settings.ts`): a JSON blob holding every sermon plus which
@@ -303,8 +303,7 @@ function loadLegacyGlobals(): Sermon | null {
 /**
  * Load the library: the persisted collection wins; otherwise adopt the
  * step-1 snapshot, then the legacy globals, then a fresh empty sermon —
- * so existing work is never lost (Sermon library rule #4). The adopted
- * state is persisted, and the superseded keys are removed so the library
+ * so existing work is never lost. The adopted state is persisted, and the superseded keys are removed so the library
  * record stays the single source of truth.
  */
 export function loadLibraryState(): LibrarySnapshot {

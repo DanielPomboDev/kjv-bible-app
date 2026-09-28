@@ -5,8 +5,7 @@ import { useToast } from "../store/toast";
 import type { ChapterVerse } from "../domain/types";
 
 /**
- * One verse inside the reading pane. Click behavior per
- * the style guide: plain click toggles, Ctrl/Cmd+click adds/removes one,
+ * One verse inside the reading pane. Click behavior: plain click toggles, Ctrl/Cmd+click adds/removes one,
  * Shift+click selects a range, double-click copies the verse immediately.
  * Right-click reports (verseId, x, y) upward; App resolves the full
  * ChapterVerse from the loaded chapter and opens the context menu.
@@ -35,7 +34,7 @@ export function Verse({
     [id, verseClick],
   );
 
-  // Double-click copies just this verse, in the exact project notes format.
+  // Double-click copies just this verse, one verse per line format.
   const onDoubleClick = useCallback(async () => {
     const single: ChapterVerse = { id, bookName: "", chapter: 0, verse, text };
     try {

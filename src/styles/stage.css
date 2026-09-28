@@ -1,8 +1,7 @@
 /*
  * Presentation stage — a separate borderless fullscreen window, styled
- * only with the theme-independent stage tokens (see the style guide,
- * "Presentation window"). Never the app's light/dark theme: this has to
- * read from across a room on a projector.
+ * only with the theme-independent stage tokens — never the app's
+ * light/dark theme: this has to read from across a room on a projector.
  *
  * Geometry: the verse block is centered in the whole slide and the
  * reference is pinned near the bottom edge (above the stage padding) —

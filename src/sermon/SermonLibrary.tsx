@@ -67,12 +67,11 @@ function formatSermonDate(iso: string): string {
 }
 
 /**
- * The sermon library (Sermon library rule #2): a TopBar button
- * opening an overlay that lists saved sermons (title + date), with a New
+ * The sermon library: a TopBar button opening an overlay that lists saved sermons (title + date), with a New
  * Sermon action and per-sermon Open, Rename, and Delete actions.
  * Deleting asks for inline confirmation first — it is destructive.
  * Opening a sermon makes it the active one: its deck and background
- * become what the rest of the app works with (rule #3).
+ * become what the rest of the app works with.
  *
  * Mirrors the popover behaviour of the settings/deck panels: Escape or
  * an outside click closes it; everything is a real button, so keyboard

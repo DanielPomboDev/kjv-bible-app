@@ -8,8 +8,7 @@ import type { ChapterVerse, SermonDeckItem } from "../domain/types";
 
 /**
  * Floating pill that appears above the bottom center of the window only
- * while one or more verses are selected (the style guide). "Copy
- * Selected" copies every selected verse in book/chapter/verse order,
+ * while one or more verses are selected. "Copy Selected" copies every selected verse in book/chapter/verse order,
  * blank line between verses; "Add to Deck" queues the same verses as
  * slides in the open sermon's deck in one go (skipping ones already
  * there); "Clear" is the quiet secondary action and empties the

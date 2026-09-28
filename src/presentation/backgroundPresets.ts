@@ -1,5 +1,5 @@
 /**
- * Slide background presets ("Slide background rules").
+ * Slide background presets for the presentation stage.
  *
  * Exactly 10 built-in presets. Each preset owns its full slide look: a CSS
  * `background` (solid color, gradient, or layered CSS-only pattern — no

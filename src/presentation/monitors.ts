@@ -1,8 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
 /**
- * Connected displays for the monitor picker (Presenter notes
- * rule #3). Enumeration lives behind the `list_monitors` command so no
+ * Connected displays for the monitor picker. Enumeration lives behind the `list_monitors` command so no
  * extra Tauri capability is needed — the Rust side calls
  * `available_monitors` directly. Outside Tauri (plain browser dev) the
  * invoke rejects and callers fall back to presenting as before.
@@ -33,8 +32,7 @@ export function listMonitors(): Promise<MonitorInfo[]> {
 }
 
 /**
- * The remembered monitor choice, persisted like settings (project notes,
- * Sermon rule #5 mechanism) so next time the picker opens with the last
+ * The remembered monitor choice, persisted like settings, so next time the picker opens with the last
  * used display preselected.
  */
 export interface MonitorChoice {

@@ -1,6 +1,5 @@
 /*
- * PresenterWindow — the speaker's control panel (Presenter
- * notes rule #2): current-slide preview, next-slide preview, the
+ * PresenterWindow — the speaker's control panel: current-slide preview, next-slide preview, the
  * current slide's private notes, and the sermon outline at a glance.
  * App theme tokens for the chrome; each slide preview renders in the
  * stage's own preset colors so it matches the audience screen.
@@ -46,7 +45,7 @@
   color: var(--text-secondary);
 }
 
-/* One-time Extend reminder (Presenter notes rule #5). */
+/* One-time Extend reminder. */
 .presenter-extend {
   display: flex;
   align-items: center;

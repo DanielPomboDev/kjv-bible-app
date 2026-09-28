@@ -14,8 +14,7 @@ import {
 import { useActiveSermon } from "./activeSermon";
 
 /**
- * The sermon library (Sermon library rules #2–3): every saved
- * sermon plus which one is open. Only one sermon is open/active at a
+ * The sermon library: every saved sermon plus which one is open. Only one sermon is open/active at a
  * time — opening another swaps out the active deck and background, it
  * never merges them. The collection persists as one localStorage record,
  * the same mechanism settings use (see `store/sermonStorage.ts`).

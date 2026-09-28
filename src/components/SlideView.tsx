@@ -4,13 +4,12 @@ import { fitText } from "./slideFit";
 
 /**
  * One projected verse slide: the verse text large and centered in the
- * stage's high-contrast tokens (never the app's light/dark theme —
- * the style guide, "Presentation window"), the reference smaller and
+ * stage's high-contrast tokens (never the app's light/dark theme), the reference smaller and
  * dimmer near the bottom.
  *
  * The prop carries content + identity only — `notes` is deliberately
- * absent from the type (Presenter notes rule #2: the stage
- * must NEVER render notes, under any circumstance), so referencing it
+ * absent from the type (the stage must NEVER render notes, under any
+ * circumstance), so referencing it
  * here is a compile error, not a code-review catch. Same for the
  * outline, which never reaches this component at all.
  *

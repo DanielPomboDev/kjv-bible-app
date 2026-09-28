@@ -15,7 +15,7 @@ import type { Theme } from "../store/settings";
  * window pushes what to present, the stage pulls its current slide and
  * moves through the deck with →/Space/←. The presenter window shares
  * the same push/pull — the backend owns the index, so both windows stay
- * in sync (Presenter notes rule #6).
+ * in sync.
  */
 
 /** Present the whole sermon deck, starting at the first slide. */

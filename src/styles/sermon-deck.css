@@ -334,8 +334,7 @@
   min-width: 0;
 }
 
-/* Presenter notes (Presenter notes rule #1): a compact
- * button under each slide entry opening the dedicated notes dialog.
+/* Presenter notes: a compact button under each slide entry opening the dedicated notes dialog.
  * Notes are private planning text — never rendered on the
  * presentation stage. */
 .sermon-deck-notes {

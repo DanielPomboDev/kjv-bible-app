@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * Dedicated presenter-notes editor (Presenter notes rule
- * #1): a modal dialog with a large textarea, opened from a slide row's
- * "Notes" button. Private text for the presenter only — stored on the
- * slide, never rendered on the audience presentation window.
+ * Dedicated presenter-notes editor: a modal dialog with a large
+ * textarea, opened from a slide row's "Notes" button. Private text for
+ * the presenter only — stored on the slide, never rendered on the
+ * audience presentation window.
  *
  * Save is always enabled: saving blank text clears the notes (see
  * `setSlideNotes`). Ctrl+Enter saves from the keyboard; Escape (or the

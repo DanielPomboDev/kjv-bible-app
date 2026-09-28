@@ -3,14 +3,13 @@ import type { CustomSlideItem } from "../domain/types";
 import { fitText } from "./slideFit";
 
 /**
- * One projected custom slide (Custom slide rules #3–4): the
- * optional title near the top, larger and bold, with the body text
+ * One projected custom slide: the optional title near the top, larger and bold, with the body text
  * below it — rendered in the same stage tokens and background preset as
  * verse slides, never the app's light/dark theme.
  *
  * The prop carries content + identity only — `notes` is deliberately
- * absent from the type (Presenter notes rule #2: the stage
- * must NEVER render notes, under any circumstance), so referencing it
+ * absent from the type (the stage must NEVER render notes, under any
+ * circumstance), so referencing it
  * here is a compile error, not a code-review catch. Same for the
  * outline, which never reaches this component at all.
  *
