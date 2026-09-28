@@ -10,6 +10,11 @@ Go to [**Releases**](https://github.com/DanielPomboDev/kjv-bible-app/releases), 
 
 ![Reading Genesis 1 with the book list and chapter grid](screenshots/reading.png)
 ![Searching for "faith" across the whole Bible](screenshots/search.png)
+![Selecting three verses with Copy, Add to Deck, and Clear actions](screenshots/selection.png)
+![The sermon deck panel with slides, reorder controls, and notes](screenshots/deck.png)
+![The sermon library with backup Export and Import](screenshots/library.png)
+![The shortcuts help dialog](screenshots/help.png)
+![Presenting: fullscreen audience slide with the presenter window on top](screenshots/stage.png)
 
 ## What you can do
 
