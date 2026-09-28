@@ -33,6 +33,10 @@ Everything stays on your computer. Sermons are stored locally — use **Export**
 
 Found a bug or want a feature? [Open an issue](https://github.com/DanielPomboDev/kjv-bible-app/issues).
 
+## Support this work
+
+KJV Bible is free forever. If it blesses you, consider a donation to fund new features: ☕ [ko-fi.com/devdandan](https://ko-fi.com/devdandan).
+
 ---
 
 *For developers: run `npx tauri dev` after `npm install`; build with `npx tauri build`.*
