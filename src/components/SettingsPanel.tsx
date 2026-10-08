@@ -6,6 +6,7 @@ import {
   type Theme,
 } from "../store/settings";
 import { MinusIcon, PlusIcon, SettingsIcon } from "./icons";
+import { useFocusReturn } from "./focus";
 
 const SIZE_LABELS: Record<ReadingSize, string> = {
   small: "Small",
@@ -33,6 +34,9 @@ export function SettingsPanel() {
   const setTheme = useSettings((s) => s.setTheme);
   const setReadingSize = useSettings((s) => s.setReadingSize);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Return focus to the gear button when the popover closes.
+  useFocusReturn(open);
 
   // Close on Escape while open (focus may sit anywhere in the popover).
   useEffect(() => {

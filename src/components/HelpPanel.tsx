@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { HelpIcon } from "./icons";
+import { useFocusReturn } from "./focus";
 
 interface Shortcut {
   keys: string[];
@@ -53,6 +54,9 @@ const SECTIONS: { title: string; shortcuts: Shortcut[] }[] = [
 export function HelpPanel() {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Return focus to the help button when the popover closes.
+  useFocusReturn(open);
 
   useEffect(() => {
     if (!open) return;

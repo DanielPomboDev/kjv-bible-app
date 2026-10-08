@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePresentFlow } from "../store/presentFlow";
 import { useActiveSermon } from "../store/activeSermon";
 import { useToast } from "../store/toast";
 import type { ChapterVerse, SermonDeckEntry } from "../domain/types";
+import { useFocusTrap } from "./focus";
 
 /**
  * Right-click menu on a verse: "Present Now" (fullscreen presentation
@@ -30,6 +31,25 @@ export function VerseContextMenu({
   const addToDeck = useActiveSermon((s) => s.addToDeck);
   const showToast = useToast((s) => s.showToast);
   const [pos, setPos] = useState({ x, y });
+  const menuRef = useRef<HTMLDivElement>(null);
+  const firstItemRef = useRef<HTMLButtonElement>(null);
+  const lastVerseId = useRef<number | null>(null);
+
+  // Keyboard users land on the first item when the menu opens; Tab stays
+  // inside it. Closing returns focus to the verse it was opened from.
+  useFocusTrap(menuRef, verse !== null);
+  useEffect(() => {
+    if (verse) {
+      lastVerseId.current = verse.id;
+      firstItemRef.current?.focus();
+    } else if (lastVerseId.current !== null) {
+      const el = document.querySelector(
+        `[data-verse-id="${lastVerseId.current}"]`,
+      );
+      if (el instanceof HTMLElement) el.focus({ preventScroll: true });
+      lastVerseId.current = null;
+    }
+  }, [verse]);
 
   // Keep the menu on-screen: flip up/left when it would overflow an edge.
   useEffect(() => {
@@ -124,11 +144,13 @@ export function VerseContextMenu({
   return (
     <div
       className="verse-context-menu"
+      ref={menuRef}
       role="menu"
       aria-label={`Verse actions for ${verse.bookName} ${verse.chapter}:${verse.verse}`}
       style={{ left: pos.x, top: pos.y }}
     >
       <button
+        ref={firstItemRef}
         type="button"
         className="verse-context-menu-item"
         role="menuitem"

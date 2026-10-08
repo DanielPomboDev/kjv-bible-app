@@ -17,6 +17,7 @@ import { CustomSlideEditor } from "../presentation/CustomSlideEditor";
 import { SlideNotesEditor } from "../presentation/SlideNotesEditor";
 import { OutlineTab } from "../sermon/OutlineTab";
 import { ArrowDownIcon, ArrowUpIcon, CloseIcon, CopyIcon, DeckIcon } from "./icons";
+import { useFocusReturn } from "./focus";
 
 /**
  * Private presenter notes for one slide: a compact button under the slide entry showing whether notes
@@ -93,6 +94,9 @@ export function SermonDeckPanel() {
   const panelRef = useRef<HTMLDivElement>(null);
   const deckTabRef = useRef<HTMLButtonElement>(null);
   const outlineTabRef = useRef<HTMLButtonElement>(null);
+
+  // Return focus to the TopBar button when the popover closes.
+  useFocusReturn(open);
 
   // Arrow keys move between the Deck/Outline tabs (tablist pattern).
   const onTabsKeyDown = useCallback(

@@ -4,6 +4,7 @@ import type { SearchResult, SearchHit } from "../domain/types";
 import { useNavigation } from "../store/navigation";
 import { useSearch } from "../store/search";
 import { SearchIcon } from "./icons";
+import { useFocusReturn, useFocusTrap } from "./focus";
 
 /** Debounce before hitting the backend while the user types (ms). */
 const DEBOUNCE_MS = 150;
@@ -38,7 +39,13 @@ export function SearchOverlay() {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const requestSeq = useRef(0);
+
+  // Return focus to the search launcher when the overlay closes, and keep
+  // Tab inside the dialog while it is open.
+  useFocusReturn(open);
+  useFocusTrap(panelRef, open);
 
   // Focus the input whenever the overlay opens.
   useEffect(() => {
@@ -163,8 +170,15 @@ export function SearchOverlay() {
       case "verse": {
         const h = results.hit;
         body = (
-          <ul className="search-results" ref={listRef} aria-label="Search results">
+          <ul
+            id="search-results"
+            className="search-results"
+            ref={listRef}
+            role="listbox"
+            aria-label="Search results"
+          >
             <HitRow
+              index={0}
               hit={h}
               label={KIND_LABELS.verse}
               sub={`${h.bookName} ${h.chapter}:${h.verse}`}
@@ -183,10 +197,17 @@ export function SearchOverlay() {
             <p className="search-status">
               {results.bookName} {results.chapter} — {results.hits.length} verses
             </p>
-            <ul className="search-results" ref={listRef} aria-label="Search results">
+            <ul
+              id="search-results"
+              className="search-results"
+              ref={listRef}
+              role="listbox"
+              aria-label="Search results"
+            >
               {results.hits.map((h, i) => (
                 <HitRow
                   key={h.id}
+                  index={i}
                   hit={h}
                   sub={`${h.bookName} ${h.chapter}:${h.verse}`}
                   text={h.text}
@@ -209,10 +230,17 @@ export function SearchOverlay() {
               {KIND_LABELS.text} — {results.hits.length} result
               {results.hits.length === 1 ? "" : "s"}
             </p>
-            <ul className="search-results" ref={listRef} aria-label="Search results">
+            <ul
+              id="search-results"
+              className="search-results"
+              ref={listRef}
+              role="listbox"
+              aria-label="Search results"
+            >
               {results.hits.map((h, i) => (
                 <HitRow
                   key={h.id}
+                  index={i}
                   hit={h}
                   sub={`${h.bookName} ${h.chapter}:${h.verse}`}
                   text={h.text}
@@ -237,7 +265,7 @@ export function SearchOverlay() {
       aria-label="Search the Bible"
     >
       <div className="search-scrim" onClick={closeSearch} aria-hidden="true" />
-      <div className="search-panel">
+      <div className="search-panel" ref={panelRef}>
         <div className="search-input-row">
           <span className="search-input-icon" aria-hidden="true">
             <SearchIcon />
@@ -246,6 +274,13 @@ export function SearchOverlay() {
             ref={inputRef}
             className="search-input"
             type="text"
+            role="combobox"
+            aria-expanded={nav.length > 0}
+            aria-controls="search-results"
+            aria-activedescendant={
+              nav.length > 0 ? `search-hit-${selected}` : undefined
+            }
+            aria-autocomplete="list"
             placeholder='Search — "John 3:16", a word, or "exact phrase"'
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -263,6 +298,8 @@ export function SearchOverlay() {
 }
 
 interface HitRowProps {
+  /** Position in the navigable list — drives the option id. */
+  index: number;
   hit: SearchHit;
   /** Group label shown on the first row of a result group, if any. */
   label?: string;
@@ -273,10 +310,13 @@ interface HitRowProps {
   onOpen: () => void;
 }
 
-function HitRow({ hit, label, sub, text, selected, onSelect, onOpen }: HitRowProps) {
+function HitRow({ index, hit, label, sub, text, selected, onSelect, onOpen }: HitRowProps) {
   return (
     <li
+      id={`search-hit-${index}`}
       className="search-hit"
+      role="option"
+      aria-selected={selected}
       data-selected={selected || undefined}
       data-hit-id={hit.id}
       onMouseMove={onSelect}

@@ -224,6 +224,8 @@ function App() {
                       id={v.id}
                       verse={v.verse}
                       text={v.text}
+                      bookName={loaded.bookName}
+                      chapter={loaded.chapter}
                       onContextMenu={openVerseMenu}
                     />
                   ))}

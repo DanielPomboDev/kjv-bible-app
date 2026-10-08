@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { usePresentFlow } from "../store/presentFlow";
 import { monitorKey } from "../presentation/monitors";
+import { useFocusReturn, useFocusTrap } from "../components/focus";
 
 /**
  * The monitor gate before presenting: an App-level modal dialog, so both entry points — the deck
@@ -18,6 +19,8 @@ import { monitorKey } from "../presentation/monitors";
  */
 export function MonitorPicker() {
   const phase = usePresentFlow((s) => s.phase);
+  // Return focus to the Present button when the gate closes.
+  useFocusReturn(phase !== "closed");
   if (phase === "closed") return null;
   return (
     <div className="monitor-overlay">
@@ -47,7 +50,9 @@ function PickDialog() {
   const confirmPresent = usePresentFlow((s) => s.confirmPresent);
   const cancelPresent = usePresentFlow((s) => s.cancelPresent);
   const checkedRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLFormElement>(null);
   useEscapeToCancel();
+  useFocusTrap(panelRef, true);
 
   // Keyboard-first: focus the preselected display on open.
   useEffect(() => {
@@ -58,6 +63,7 @@ function PickDialog() {
     <>
       <div className="monitor-scrim" onClick={cancelPresent} aria-hidden="true" />
       <form
+        ref={panelRef}
         className="monitor-panel"
         role="dialog"
         aria-modal="true"
@@ -116,7 +122,9 @@ function WarnDialog() {
   const presentAnyway = usePresentFlow((s) => s.presentAnyway);
   const cancelPresent = usePresentFlow((s) => s.cancelPresent);
   const presentRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   useEscapeToCancel();
+  useFocusTrap(panelRef, true);
 
   useEffect(() => {
     presentRef.current?.focus();
@@ -126,8 +134,9 @@ function WarnDialog() {
     <>
       <div className="monitor-scrim" onClick={cancelPresent} aria-hidden="true" />
       <div
+        ref={panelRef}
         className="monitor-panel"
-        role="dialog"
+        role="alertdialog"
         aria-modal="true"
         aria-labelledby="monitor-warn-title"
         aria-describedby="monitor-warn-text"

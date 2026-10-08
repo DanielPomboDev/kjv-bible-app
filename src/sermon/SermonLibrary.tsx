@@ -4,6 +4,7 @@ import { useToast } from "../store/toast";
 import { isSermon } from "../store/sermonStorage";
 import type { Sermon } from "../domain/types";
 import { CloseIcon, LibraryIcon } from "../components/icons";
+import { useFocusReturn } from "../components/focus";
 
 /** Backup file envelope, so imports can reject foreign JSON early. */
 interface SermonBackup {
@@ -80,8 +81,9 @@ function formatSermonDate(iso: string): string {
  */
 export function SermonLibrary() {
   const [open, setOpen] = useState(false);
-  const sermons = useSermonLibrary((s) => s.sermons);
-  const activeId = useSermonLibrary((s) => s.activeId);
+  // Return focus to the library button when the overlay closes.
+  useFocusReturn(open);
+  const sermons = useSermonLibrary((s) => s.sermons);  const activeId = useSermonLibrary((s) => s.activeId);
   const createSermon = useSermonLibrary((s) => s.createSermon);
   const openSermon = useSermonLibrary((s) => s.openSermon);
   const renameSermon = useSermonLibrary((s) => s.renameSermon);

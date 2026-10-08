@@ -70,6 +70,13 @@
   box-shadow: inset 2px 0 0 var(--accent);
 }
 
+/* Keyboard focus mirrors hover: the row is now reachable by Tab, so a
+   focused verse must look interactive, not stop at the browser default. */
+.verse:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
 .verse-number {
   font-family: var(--font-ui);
   font-size: var(--text-verse-number-size);
