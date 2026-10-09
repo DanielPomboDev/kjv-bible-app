@@ -26,8 +26,6 @@ import "./styles/stage.css"; // Slide look shared with the presentation stage,
 // so the Deck canvas previews the real thing (no .stage element exists
 // in the main window, so the fullscreen .stage rule never matches here).
 import "./styles/deck-studio.css";
-import "./styles/sermon-library.css";
-import "./styles/outline.css";
 import "./styles/background-picker.css";
 
 function App() {

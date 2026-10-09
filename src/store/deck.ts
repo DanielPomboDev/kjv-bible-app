@@ -121,15 +121,14 @@ function newDuplicateUid(): string {
     .slice(2, 8)}`;
 }
 
-function newOutlineId(): string {
-  return `outline-${Date.now().toString(36)}-${Math.random()
-    .toString(36)
-    .slice(2, 8)}`;
-}
-
 interface DeckState {
   readonly deck: readonly SermonDeckItem[];
   readonly backgroundPresetId: string;
+  /**
+   * Planning sections adopted from legacy data. Retained and persisted
+   * untouched — there is no outline UI anymore (planning lives in
+   * PowerPoint).
+   */
   readonly outline: readonly OutlineSection[];
   /** Queue a slide, keeping insertion order. False when the id exists. */
   addToDeck: (entry: SermonDeckItem) => boolean;
@@ -160,18 +159,6 @@ interface DeckState {
   clearDeck: () => void;
   /** Select a background preset for export (unknown ids ignored). */
   setBackgroundPresetId: (id: string) => void;
-  /** Append an outline section. Null when the heading is blank. */
-  addOutlineSection: (heading: string, body: string) => OutlineSection | null;
-  /** Edit an outline section in place. False when missing/blank. */
-  updateOutlineSection: (
-    id: string,
-    heading: string,
-    body: string,
-  ) => boolean;
-  /** Remove one outline section (no-op if missing). */
-  removeOutlineSection: (id: string) => void;
-  /** Move an outline section; no-op when out of range or equal. */
-  moveOutlineSection: (fromIndex: number, toIndex: number) => void;
 }
 
 export const useDeck = create<DeckState>()((set, get) => {
@@ -264,54 +251,6 @@ export const useDeck = create<DeckState>()((set, get) => {
       const { backgroundPresetId } = get();
       if (backgroundPresetId === id) return;
       commit({ backgroundPresetId: id });
-    },
-
-    addOutlineSection: (heading, body) => {
-      const cleanHeading = heading.trim();
-      if (cleanHeading.length === 0) return null;
-      const section: OutlineSection = {
-        id: newOutlineId(),
-        heading: cleanHeading,
-        body: body.trim(),
-      };
-      commit({ outline: [...get().outline, section] });
-      return section;
-    },
-
-    updateOutlineSection: (id, heading, body) => {
-      const cleanHeading = heading.trim();
-      if (cleanHeading.length === 0) return false;
-      const { outline } = get();
-      const index = outline.findIndex((s) => s.id === id);
-      if (index === -1) return false;
-      const next = [...outline];
-      next[index] = { id, heading: cleanHeading, body: body.trim() };
-      commit({ outline: next });
-      return true;
-    },
-
-    removeOutlineSection: (id) => {
-      const { outline } = get();
-      const next = outline.filter((s) => s.id !== id);
-      if (next.length === outline.length) return;
-      commit({ outline: next });
-    },
-
-    moveOutlineSection: (fromIndex, toIndex) => {
-      const { outline } = get();
-      if (
-        fromIndex === toIndex ||
-        fromIndex < 0 ||
-        fromIndex >= outline.length ||
-        toIndex < 0 ||
-        toIndex >= outline.length
-      ) {
-        return;
-      }
-      const next = [...outline];
-      const [moved] = next.splice(fromIndex, 1);
-      next.splice(toIndex, 0, moved);
-      commit({ outline: next });
     },
   };
 });

@@ -1,7 +1,13 @@
 /*
- * Presentation stage — a separate borderless fullscreen window, styled
- * only with the theme-independent stage tokens — never the app's
- * light/dark theme: this has to read from across a room on a projector.
+ * Slide look — the projected-slide type system (serif verse, pinned
+ * reference, custom title/body, freeform blocks), shared by the Deck
+ * Studio canvas preview and PowerPoint-bound rendering. Uses only the
+ * theme-independent stage tokens — never the app's light/dark theme —
+ * so the preview reads like a slide, not like the reader.
+ *
+ * (The fullscreen stage window this was built for is gone; presenting
+ * happens in PowerPoint. The type system stays because the preview
+ * needs exactly these rules.)
  *
  * Geometry: the verse block is centered in the whole slide and the
  * reference is pinned near the bottom edge (above the stage padding) —

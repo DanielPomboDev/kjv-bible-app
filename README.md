@@ -19,8 +19,8 @@ Go to [**Releases**](https://github.com/DanielPomboDev/kjv-bible-app/releases), 
 - **Read** all 66 books (31,102 verses). The app reopens where you left off.
 - **Search** any word or phrase, or jump straight to a reference like `John 3:16` (`Ctrl+K`).
 - **Select verses** with click, `Ctrl+Click`, or `Shift+Click` — then copy them as clean text or queue them all into your sermon deck at once.
-- **Assemble the deck** — queue verses, reorder them, duplicate, pick a background, sketch a planning outline.
-- **Export to PowerPoint** — download the deck as a `.pptx` (verses, custom slides, images, notes as speaker notes) and keep designing and presenting in PowerPoint.
+- **Assemble the deck** — queue verses, reorder them, duplicate, pick a background.
+- **Export to PowerPoint** — download the deck as a `.pptx` and keep designing and presenting in PowerPoint.
 - **Adjust** — light/dark theme, reading text size, and a `?` button listing every shortcut.
 
 ## Your data

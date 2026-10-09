@@ -84,7 +84,9 @@ describe("deck store", () => {
             id: "sermon-1",
             title: "Kept",
             date: new Date(2026, 0, 1).toISOString(),
-            outline: [],
+            outline: [
+              { id: "outline-1", heading: "Intro", body: "Open well" },
+            ],
             deck: [verse(3)],
             backgroundPresetId: "deep-navy",
           },
@@ -96,6 +98,8 @@ describe("deck store", () => {
     const { useDeck: adopted } = await import("./deck");
     expect(adopted.getState().deck).toHaveLength(1);
     expect(adopted.getState().backgroundPresetId).toBe("deep-navy");
+    // Planning data carries over untouched (no UI writes it anymore).
+    expect(adopted.getState().outline).toHaveLength(1);
     // Migration consumed the legacy record.
     expect(store.get("bible.sermonLibrary")).toBeUndefined();
     expect(store.get("bible.deck")).toContain("verse");
@@ -108,17 +112,12 @@ describe("deck store", () => {
     expect(useDeck.getState().deck.map((d) => d.id)).toEqual([9, 10]);
   });
 
-  test("background ignores unknown presets; outline CRUD works", async () => {
+  test("background ignores unknown presets", async () => {
     const useDeck = await freshStore();
     const s = () => useDeck.getState();
     s().setBackgroundPresetId("nope");
     expect(s().backgroundPresetId).toBe("classic-black");
-    const section = s().addOutlineSection("Intro", "body");
-    expect(section).not.toBeNull();
-    expect(s().updateOutlineSection(section!.id, "Intro!", "")).toBe(true);
-    expect(s().updateOutlineSection(section!.id, "  ", "")).toBe(false);
-    s().moveOutlineSection(0, 0);
-    s().removeOutlineSection(section!.id);
-    expect(s().outline).toHaveLength(0);
+    s().setBackgroundPresetId("deep-navy");
+    expect(s().backgroundPresetId).toBe("deep-navy");
   });
 });
