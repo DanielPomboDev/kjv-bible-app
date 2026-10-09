@@ -1,6 +1,12 @@
 import type { Sermon, SermonDeckItem } from "../domain/types";
+import { deckKey } from "../domain/types";
 import { getBackgroundPreset } from "../presentation/backgroundPresets";
 import { renderPresetBackground } from "./backgrounds";
+import {
+  loadExportRecord,
+  newSlidesSince,
+  saveExportRecord,
+} from "./exportHistory";
 
 /**
  * Deck → PowerPoint export (one-way: the app assembles content,
@@ -57,10 +63,10 @@ export const pctToInY = (pct: number): number => (pct / 100) * PPTX_H_IN;
 export const sizePctToPt = (sizePct: number): number =>
   (sizePct / 100) * PPTX_W_IN * 72;
 
-const VERSE_REF_PT = 18;
-const VERSE_BODY_PT = 32;
-const TITLE_PT = 40;
-const BODY_PT = 28;
+const VERSE_REF_PT = 26;
+const VERSE_BODY_PT = 89;
+const TITLE_PT = 46;
+const BODY_PT = 89;
 
 export interface PptxRun {
   text: string;
@@ -78,6 +84,8 @@ export interface PptxTextBox {
   w: number;
   h?: number;
   align: "left" | "center" | "right";
+  /** Vertical anchor inside the box (stage centers hero text). */
+  valign?: "top" | "middle" | "bottom";
   runs: PptxRun[];
   /** Shrink-to-fit (long verses, legacy bodies) vs user-sized boxes. */
   shrink?: boolean;
@@ -150,28 +158,15 @@ export function planSlide(
   };
 
   if (item.type === "verse") {
+    // Stage geometry: hero verse text centered in the middle band, small
+    // dim sans reference pinned near the bottom — mirrored here.
     plan.texts.push({
-      x: 0.5,
-      y: 0.3,
-      w: PPTX_W_IN - 1,
-      h: 0.7,
+      x: 0.8,
+      y: 0.7,
+      w: PPTX_W_IN - 1.6,
+      h: 5.5,
       align: "center",
-      runs: [
-        {
-          text: item.label,
-          fontSize: VERSE_REF_PT,
-          fontFace: "Georgia",
-          color: look.refColor,
-          bold: true,
-        },
-      ],
-    });
-    plan.texts.push({
-      x: 0.5,
-      y: 1.3,
-      w: PPTX_W_IN - 1,
-      h: 5.4,
-      align: "center",
+      valign: "middle",
       runs: [
         {
           text: item.text,
@@ -181,6 +176,22 @@ export function planSlide(
         },
       ],
       shrink: true,
+    });
+    plan.texts.push({
+      x: 0.8,
+      y: 6.45,
+      w: PPTX_W_IN - 1.6,
+      h: 0.55,
+      align: "center",
+      valign: "middle",
+      runs: [
+        {
+          text: item.label,
+          fontSize: VERSE_REF_PT,
+          fontFace: "Calibri",
+          color: look.refColor,
+        },
+      ],
     });
     return plan;
   }
@@ -193,6 +204,7 @@ export function planSlide(
           y: pctToInY(block.y),
           w: pctToInX(block.w),
           align: block.align,
+          valign: "top",
           runs: [
             {
               text: block.text,
@@ -218,32 +230,36 @@ export function planSlide(
     return plan;
   }
 
+  // Legacy custom: bold sans title near the top (like the stage),
+  // fitted serif body centered in the remaining middle band.
   let bodyY = 1;
   if (item.title !== undefined && item.title.trim().length > 0) {
     plan.texts.push({
-      x: 0.5,
+      x: 0.8,
       y: 0.5,
-      w: PPTX_W_IN - 1,
+      w: PPTX_W_IN - 1.6,
       h: 1.2,
       align: "center",
+      valign: "middle",
       runs: [
         {
           text: item.title,
           fontSize: TITLE_PT,
-          fontFace: "Georgia",
+          fontFace: "Calibri",
           color: look.textColor,
           bold: true,
         },
       ],
     });
-    bodyY = 2;
+    bodyY = 1.9;
   }
   plan.texts.push({
-    x: 0.5,
+    x: 0.8,
     y: bodyY,
-    w: PPTX_W_IN - 1,
-    h: 6.5 - bodyY,
+    w: PPTX_W_IN - 1.6,
+    h: 6.4 - bodyY,
     align: "center",
+    valign: "middle",
     runs: [
       {
         text: item.body,
@@ -259,7 +275,15 @@ export function planSlide(
 
 /** Pure mapping: whole sermon → slide plans in deck order. */
 export function planDeck(sermon: Sermon): PptxSlidePlan[] {
-  return sermon.deck.map((item) => planSlide(item, sermon.backgroundPresetId));
+  return planItems(sermon.deck, sermon.backgroundPresetId);
+}
+
+/** Pure mapping: explicit items → plans (append flow exports a tail). */
+export function planItems(
+  items: readonly SermonDeckItem[],
+  sermonBg: string,
+): PptxSlidePlan[] {
+  return items.map((item) => planSlide(item, sermonBg));
 }
 
 /** `My Sermon Title` → `my-sermon-title.pptx`. */
@@ -272,24 +296,23 @@ export function pptxFileName(title: string): string {
   return `${slug}.pptx`;
 }
 
-/**
- * Render the sermon and trigger a browser download (v1 delivery: no
- * Tauri plugins — the WebView saves to the download folder). Throws on
- * an empty deck or generation failure for the caller to toast.
- */
-export async function downloadDeckPptx(sermon: Sermon): Promise<void> {
-  const blob = await generateDeckPptx(sermon);
-  const url = URL.createObjectURL(blob);
-  try {
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = pptxFileName(sermon.title);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } finally {
-    window.setTimeout(() => URL.revokeObjectURL(url), 5000);
+/** One user-facing line per export outcome (pure, tested). */
+export function exportToast(
+  result: SmartExportResult,
+  count: number,
+): string {
+  const slides = `${count} slide${count === 1 ? "" : "s"}`;
+  if (result.kind === "append") {
+    const into = result.mainFileName ?? "your deck";
+    const what = `${result.fileName} with ${count} new`;
+    return result.opened
+      ? `Opened ${what} — drag them into ${into}`
+      : `Saved ${what} — drag them into ${into}`;
   }
+  const changed = result.recordBroken ? "Deck changed — full re-export: " : "";
+  return result.opened
+    ? `${changed}Opened ${result.fileName} in PowerPoint (${slides})`
+    : `${changed}Saved ${result.fileName} — open it in PowerPoint (${slides})`;
 }
 
 /** Blob → base64 without blowing the call stack on multi-MB files. */
@@ -323,16 +346,27 @@ function isTauriApp(): boolean {
 }
 
 /**
- * Export pipeline: render → save to Downloads via the backend → open
- * with the default app (PowerPoint). Outside Tauri (plain browser dev)
- * it falls back to an anchor download that the user opens by hand.
- * Backend/open failures throw with the reason so toasts stay honest.
+ * Render + deliver one file: save to Downloads via the backend and open
+ * with the default app (anchor download outside Tauri). Failures throw
+ * with the reason so toasts stay honest.
  */
-export async function exportDeckPptx(sermon: Sermon): Promise<ExportResult> {
-  const blob = await generateDeckPptx(sermon);
-  const fileName = pptxFileName(sermon.title);
+async function renderAndDeliver(
+  fileName: string,
+  render: () => Promise<Blob>,
+): Promise<ExportResult> {
+  const blob = await render();
   if (!isTauriApp()) {
-    await downloadDeckPptx(sermon);
+    const url = URL.createObjectURL(blob);
+    try {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } finally {
+      window.setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
     return { fileName, path: fileName, opened: false };
   }
   const { invoke } = await import("@tauri-apps/api/core");
@@ -353,18 +387,84 @@ export async function exportDeckPptx(sermon: Sermon): Promise<ExportResult> {
   return { fileName, path, opened: true };
 }
 
+export interface SmartExportResult extends ExportResult {
+  kind: "full" | "append";
+  /** Slides in this file (tail length for appends). */
+  count: number;
+  /** Main file to drag into (append mode only). */
+  mainFileName?: string;
+  /** A record existed but the deck changed mid-way: full re-export. */
+  recordBroken: boolean;
+}
+
+/** `${slug}-new-slides.pptx`: the delta file for the append flow. */
+export function appendFileName(title: string): string {
+  return pptxFileName(title).replace(/\.pptx$/, "-new-slides.pptx");
+}
+
 /**
- * Render a sermon to a .pptx Blob. Lazy-imports pptxgenjs (startup
- * stays fast) and throws on an empty deck for the caller to toast.
+ * Smart export: when the deck is exactly the recorded export plus new
+ * slides at the end, only the tail gets a file (the user's designed
+ * PowerPoint deck stays untouched — a full re-export would wipe their
+ * PowerPoint-side work). Anything else is a full export that refreshes
+ * the record.
  */
-export async function generateDeckPptx(sermon: Sermon): Promise<Blob> {
-  if (sermon.deck.length === 0) {
+export async function exportDeckSmart(
+  sermon: Sermon,
+): Promise<SmartExportResult> {
+  const record = loadExportRecord(sermon.id);
+  const tail = newSlidesSince(sermon.deck, record);
+  if (tail !== null && record !== null) {
+    const fileName = appendFileName(sermon.title);
+    const base = await renderAndDeliver(fileName, () =>
+      generateDeckPptx(sermon, tail),
+    );
+    return {
+      ...base,
+      kind: "append",
+      count: tail.length,
+      mainFileName: record.fileName,
+      recordBroken: false,
+    };
+  }
+  const fileName = pptxFileName(sermon.title);
+  const base = await renderAndDeliver(fileName, () =>
+    generateDeckPptx(sermon),
+  );
+  saveExportRecord({
+    sermonId: sermon.id,
+    fileName,
+    keys: sermon.deck.map((item) => deckKey(item)),
+    exportedAt: new Date().toISOString(),
+  });
+  const sameAsRecord =
+    record !== null &&
+    record.keys.length === sermon.deck.length &&
+    record.keys.every((key, i) => key === deckKey(sermon.deck[i]));
+  return {
+    ...base,
+    kind: "full",
+    count: sermon.deck.length,
+    recordBroken: record !== null && !sameAsRecord,
+  };
+}
+
+/**
+ * Render items to a .pptx Blob. Lazy-imports pptxgenjs (startup stays
+ * fast) and throws on an empty set for the caller to toast. Items
+ * default to the whole deck; the append flow passes a tail.
+ */
+export async function generateDeckPptx(
+  sermon: Sermon,
+  items: readonly SermonDeckItem[] = sermon.deck,
+): Promise<Blob> {
+  if (items.length === 0) {
     throw new Error("Cannot export an empty deck.");
   }
   const { default: PptxGenJS } = await import("pptxgenjs");
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
-  const plans = planDeck(sermon);
+  const plans = planItems(items, sermon.backgroundPresetId);
   // Rendered backgrounds are deterministic per preset: resolve once each.
   const bgArt = new Map<string, { color: string } | { data: string }>();
   for (const slide of plans) {
@@ -415,6 +515,8 @@ export async function generateDeckPptx(sermon: Sermon): Promise<Blob> {
           w: box.w,
           ...(box.h !== undefined ? { h: box.h } : {}),
           align: box.align,
+          valign: box.valign ?? "top",
+          margin: 0,
           ...(box.shrink === true ? { fit: "shrink" } : {}),
         },
       );

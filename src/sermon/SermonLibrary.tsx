@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSermonLibrary } from "../store/sermonLibrary";
 import { useToast } from "../store/toast";
 import { isSermon } from "../store/sermonStorage";
-import { exportDeckPptx } from "../export/pptx";
+import { exportDeckSmart, exportToast } from "../export/pptx";
 import type { Sermon } from "../domain/types";
 import { CloseIcon, LibraryIcon } from "../components/icons";
 import { useFocusReturn } from "../components/focus";
@@ -160,20 +160,15 @@ export function SermonLibrary() {
     setRenamingId(id);
   };
 
-  // One-way export to PowerPoint (saves + opens, anchor fallback).
+  // Smart one-way export (full deck or appended tail).
   const onExportPptx = async (sermon: Sermon) => {
     if (sermon.deck.length === 0) {
       showToast("Nothing to export — that sermon has no slides");
       return;
     }
     try {
-      const result = await exportDeckPptx(sermon);
-      const count = `${sermon.deck.length} slide${sermon.deck.length === 1 ? "" : "s"}`;
-      showToast(
-        result.opened
-          ? `Opened ${result.fileName} in PowerPoint (${count})`
-          : `Saved ${result.fileName} — open it in PowerPoint (${count})`,
-      );
+      const result = await exportDeckSmart(sermon);
+      showToast(exportToast(result, result.count));
     } catch (e) {
       showToast(`Export failed: ${e instanceof Error ? e.message : String(e)}`);
     }
