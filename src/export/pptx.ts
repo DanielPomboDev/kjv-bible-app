@@ -1,5 +1,6 @@
 import type { Sermon, SermonDeckItem } from "../domain/types";
 import { getBackgroundPreset } from "../presentation/backgroundPresets";
+import { renderPresetBackground } from "./backgrounds";
 
 /**
  * Deck → PowerPoint export (one-way: the app assembles content,
@@ -91,6 +92,9 @@ export interface PptxImageBox {
 }
 
 export interface PptxSlidePlan {
+  /** Resolved preset id (drives rendered-image backgrounds). */
+  bgPresetId: string;
+  /** Solid fallback fill (exact for solids; fallback without DOM). */
   background: string;
   texts: PptxTextBox[];
   images: PptxImageBox[];
@@ -101,8 +105,20 @@ function hex(color: string): string {
   return color.replace("#", "").toUpperCase();
 }
 
+/** Resolved fill for one slide: rendered artwork when available,
+ * otherwise the solid fallback. Pure except the painter (DOM); without
+ * a document every preset resolves solid. */
+export function resolveSlideBackground(
+  presetId: string,
+  fallbackColor: string,
+): { color: string } | { data: string } {
+  const image = renderPresetBackground(presetId);
+  return image !== null ? { data: image } : { color: fallbackColor };
+}
+
 /** Resolved colors + fill for one slide (per-slide override supported). */
 function slideLook(item: SermonDeckItem, sermonBg: string): {
+  presetId: string;
   fill: string;
   textColor: string;
   refColor: string;
@@ -111,6 +127,7 @@ function slideLook(item: SermonDeckItem, sermonBg: string): {
     item.type === "custom" ? item.backgroundPresetId : undefined;
   const preset = getBackgroundPreset(override ?? sermonBg);
   return {
+    presetId: preset.id,
     fill: pptxBackgroundFor(preset.id),
     textColor: hex(preset.textColor),
     refColor: hex(preset.referenceColor),
@@ -125,6 +142,7 @@ export function planSlide(
   const look = slideLook(item, sermonBg);
   const notes = item.notes;
   const plan: PptxSlidePlan = {
+    bgPresetId: look.presetId,
     background: look.fill,
     texts: [],
     images: [],
@@ -346,9 +364,36 @@ export async function generateDeckPptx(sermon: Sermon): Promise<Blob> {
   const { default: PptxGenJS } = await import("pptxgenjs");
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
-  for (const slide of planDeck(sermon)) {
+  const plans = planDeck(sermon);
+  // Rendered backgrounds are deterministic per preset: resolve once each.
+  const bgArt = new Map<string, { color: string } | { data: string }>();
+  for (const slide of plans) {
+    if (!bgArt.has(slide.bgPresetId)) {
+      bgArt.set(
+        slide.bgPresetId,
+        resolveSlideBackground(slide.bgPresetId, slide.background),
+      );
+    }
+  }
+  for (const slide of plans) {
     const pptSlide = pptx.addSlide();
-    pptSlide.background = { color: slide.background };
+    // Rendered artwork goes on as a full-bleed image shape behind the
+    // content (slide `background.data` is documented but silently
+    // dropped by this pptxgenjs version — verified by byte comparison).
+    // The solid fallback stays underneath for the shape edges.
+    const bg = bgArt.get(slide.bgPresetId) ?? { color: slide.background };
+    if ("data" in bg) {
+      pptSlide.background = { color: slide.background };
+      pptSlide.addImage({
+        data: bg.data,
+        x: 0,
+        y: 0,
+        w: PPTX_W_IN,
+        h: PPTX_H_IN,
+      });
+    } else {
+      pptSlide.background = { color: bg.color };
+    }
     for (const box of slide.texts) {
       pptSlide.addText(
         box.runs.map((run) => ({

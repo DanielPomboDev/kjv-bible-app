@@ -10,6 +10,7 @@ import {
   pptxBackgroundFor,
   pptxFileName,
   pptxFontFace,
+  resolveSlideBackground,
   sizePctToPt,
 } from "./pptx";
 import type { Sermon } from "../domain/types";
@@ -97,6 +98,7 @@ describe("pptx export mapping", () => {
     );
     // Per-slide override wins over the sermon background.
     expect(plan.background).toBe("14264A");
+    expect(plan.bgPresetId).toBe("deep-navy");
     expect(plan.texts).toHaveLength(1);
     const box = plan.texts[0];
     expect(box.x).toBeCloseTo(1.333, 3);
@@ -120,6 +122,16 @@ describe("pptx export mapping", () => {
     expect(plans).toHaveLength(2);
     expect(plans[0].texts[0].runs[0].text).toBe("Genesis 1:1");
     expect(plans[1].texts[0].runs[0].text).toBe("Grace");
+  });
+
+  test("background resolution prefers art, falls back to solid", () => {
+    expect(resolveSlideBackground("deep-navy", "14264A")).toEqual({
+      color: "14264A",
+    });
+    // No document in node: rendered presets fall back to their solid.
+    expect(resolveSlideBackground("stained-glass", "2A1545")).toEqual({
+      color: "2A1545",
+    });
   });
 
   test("empty deck refuses to generate", async () => {
