@@ -1,16 +1,16 @@
 import { BACKGROUND_PRESETS } from "./backgroundPresets";
-import { useActiveSermon } from "../store/activeSermon";
+import { useDeck } from "../store/deck";
 
 /**
  * Background picker: a grid of 10 small preview swatches, one per preset, each showing its actual
  * background so it's recognizable at a glance. Clicking (or Enter/Space
- * on) a swatch selects that preset on the currently open sermon
- * (`sermon.backgroundPresetId`) and closes the picker via `onClose`.
+ * on) a swatch selects that preset for the deck's export background
+ * and closes the picker via `onClose`.
  * The current preset is highlighted and marked with `aria-pressed`.
  */
 export function BackgroundPicker({ onClose }: { onClose: () => void }) {
-  const presetId = useActiveSermon((s) => s.sermon.backgroundPresetId);
-  const setPresetId = useActiveSermon((s) => s.setBackgroundPresetId);
+  const presetId = useDeck((s) => s.backgroundPresetId);
+  const setPresetId = useDeck((s) => s.setBackgroundPresetId);
 
   return (
     <div className="background-picker" role="dialog" aria-label="Slide background">

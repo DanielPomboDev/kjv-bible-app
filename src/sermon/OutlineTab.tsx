@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useActiveSermon } from "../store/activeSermon";
+import { useDeck } from "../store/deck";
 import { useToast } from "../store/toast";
 import {
   ArrowDownIcon,
@@ -9,7 +9,8 @@ import {
 import { OutlineEditor } from "./OutlineEditor";
 
 /**
- * The outline tab of the sermon panel: the open sermon's ordered planning sections — heading plus a plain-text
+ * The outline tab of the sermon panel: the deck's ordered planning
+ * sections — heading plus a plain-text
  * body preview per row, with up/down reorder buttons, a remove button,
  * and click-to-edit (keyboard: Enter/Space on the row). An "Add Section"
  * button opens the editor for a fresh section.
@@ -20,11 +21,11 @@ import { OutlineEditor } from "./OutlineEditor";
  * so keyboard works throughout.
  */
 export function OutlineTab() {
-  const outline = useActiveSermon((s) => s.sermon.outline);
-  const addOutlineSection = useActiveSermon((s) => s.addOutlineSection);
-  const updateOutlineSection = useActiveSermon((s) => s.updateOutlineSection);
-  const removeOutlineSection = useActiveSermon((s) => s.removeOutlineSection);
-  const moveOutlineSection = useActiveSermon((s) => s.moveOutlineSection);
+  const outline = useDeck((s) => s.outline);
+  const addOutlineSection = useDeck((s) => s.addOutlineSection);
+  const updateOutlineSection = useDeck((s) => s.updateOutlineSection);
+  const removeOutlineSection = useDeck((s) => s.removeOutlineSection);
+  const moveOutlineSection = useDeck((s) => s.moveOutlineSection);
   const showToast = useToast((s) => s.showToast);
   const [editorOpen, setEditorOpen] = useState(false);
   // Non-null while the editor is editing an existing section (its id);

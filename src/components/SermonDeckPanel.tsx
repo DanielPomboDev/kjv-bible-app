@@ -5,64 +5,24 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { useActiveSermon } from "../store/activeSermon";
-import {
-  deckKey,
-  type CustomSlideItem,
-} from "../domain/types";
-import { useToast } from "../store/toast";
+import { useDeck } from "../store/deck";
+import { deckKey } from "../domain/types";
 import { BackgroundPicker } from "../presentation/BackgroundPicker";
-import { CustomSlideEditor } from "../presentation/CustomSlideEditor";
-import { SlideNotesEditor } from "../presentation/SlideNotesEditor";
 import { OutlineTab } from "../sermon/OutlineTab";
 import { ArrowDownIcon, ArrowUpIcon, CloseIcon, CopyIcon, DeckIcon } from "./icons";
 import { useFocusReturn } from "./focus";
 
 /**
- * Private presenter notes for one slide: a compact button under the slide entry showing whether notes
- * exist (dot marker). Clicking opens the dedicated notes editor dialog.
- * Notes are stored on the slide but never rendered on the audience
- * presentation window.
- */
-function SlideNotesButton({
-  hasNotes,
-  label,
-  onOpen,
-}: {
-  hasNotes: boolean;
-  label: string;
-  onOpen: () => void;
-}) {
-  return (
-    <div className="sermon-deck-notes">
-      <button
-        type="button"
-        className="sermon-deck-notes-toggle"
-        aria-haspopup="dialog"
-        aria-label={
-          hasNotes
-            ? `Edit presenter notes for ${label}`
-            : `Add presenter notes for ${label}`
-        }
-        onClick={onOpen}
-      >
-        {hasNotes ? "Edit notes" : "Add notes"}
-        {hasNotes && (
-          <span className="sermon-deck-notes-dot" aria-hidden="true" />
-        )}
-      </button>
-    </div>
-  );
-}
-
-/**
- * The sermon panel: a stack button in the TopBar opening a popover with
- * two tabs — Deck and Outline — for the currently open sermon.
+ * The deck panel: a stack button in the TopBar opening a popover with
+ * two tabs — Deck and Outline — for the sermon deck.
  *
  * The Deck tab lists the queued slides in presentation order — reference
- * plus a short text preview per row, with up/down reorder buttons and a
- * remove button (everything is real buttons, so keyboard works). The Outline tab holds the sermon's planning sections
- * (outline rules): ordered, editable, and never presented — separate from the deck on purpose.
+ * plus a short text preview per row, with up/down reorder buttons,
+ * duplicate, and remove (everything is real buttons, so keyboard
+ * works). Slides are assembled here and designed in PowerPoint after
+ * export: nothing here edits slide content. The Outline tab holds
+ * planning sections (outline rules): ordered, editable, and never
+ * exported as slides — separate from the deck on purpose.
  *
  * Mirrors SettingsPanel's popover behaviour: Escape or an outside click
  * closes it; styled with popover tokens (surface, radius-lg, shadow-2).
@@ -73,23 +33,12 @@ export function SermonDeckPanel() {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"deck" | "outline">("deck");
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [editorOpen, setEditorOpen] = useState(false);
-  // Non-null while the editor is editing an existing custom slide (its
-  // deck key); null when adding a fresh one.
-  const [editingId, setEditingId] = useState<string | null>(null);
-  // Deck key of the slide whose notes dialog is open; null when closed.
-  const [notesKey, setNotesKey] = useState<string | null>(null);
-  const deck = useActiveSermon((s) => s.sermon.deck);
-  const outlineCount = useActiveSermon((s) => s.sermon.outline.length);
-  const sermonTitle = useActiveSermon((s) => s.sermon.title);
-  const addCustomSlide = useActiveSermon((s) => s.addCustomSlide);
-  const updateCustomSlide = useActiveSermon((s) => s.updateCustomSlide);
-  const removeFromDeck = useActiveSermon((s) => s.removeFromDeck);
-  const duplicateDeckItem = useActiveSermon((s) => s.duplicateDeckItem);
-  const setSlideNotes = useActiveSermon((s) => s.setSlideNotes);
-  const moveInDeck = useActiveSermon((s) => s.moveInDeck);
-  const clearDeck = useActiveSermon((s) => s.clearDeck);
-  const showToast = useToast((s) => s.showToast);
+  const deck = useDeck((s) => s.deck);
+  const outlineCount = useDeck((s) => s.outline.length);
+  const removeFromDeck = useDeck((s) => s.removeFromDeck);
+  const duplicateDeckItem = useDeck((s) => s.duplicateDeckItem);
+  const moveInDeck = useDeck((s) => s.moveInDeck);
+  const clearDeck = useDeck((s) => s.clearDeck);
   const panelRef = useRef<HTMLDivElement>(null);
   const deckTabRef = useRef<HTMLButtonElement>(null);
   const outlineTabRef = useRef<HTMLButtonElement>(null);
@@ -109,46 +58,20 @@ export function SermonDeckPanel() {
     [tab],
   );
 
-  // Close the editor (whether adding or editing) and forget which
-  // slide was being edited.
-  const closeEditor = useCallback(() => {
-    setEditorOpen(false);
-    setEditingId(null);
-  }, []);
-
-  // Close the notes dialog and forget which slide it targeted.
-  const closeNotes = useCallback(() => {
-    setNotesKey(null);
-  }, []);
-
-  // Save from the notes dialog: blank clears (see setSlideNotes), then
-  // close. The slide could have been removed while the dialog was open
-  // — saving then just closes, like the custom slide editor path.
-  const onSaveNotes = useCallback(
-    (notes: string) => {
-      if (notesKey !== null) setSlideNotes(notesKey, notes);
-      closeNotes();
-    },
-    [notesKey, setSlideNotes, closeNotes],
-  );
-
   // Close on Escape while open (focus may sit anywhere in the popover).
-  // When the background picker or the custom slide editor is open,
-  // Escape closes just that section first; a further Escape closes the
-  // whole panel. (The editor also closes itself on Escape — either path
-  // lands here with the editor already closed, which is harmless.)
+  // When the background picker is open, Escape closes just that section
+  // first; a further Escape closes the whole panel.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (editorOpen) closeEditor();
-        else if (pickerOpen) setPickerOpen(false);
+        if (pickerOpen) setPickerOpen(false);
         else setOpen(false);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, pickerOpen, editorOpen, closeEditor]);
+  }, [open, pickerOpen]);
 
   // Close when clicking outside the popover or the stack button.
   useEffect(() => {
@@ -175,65 +98,6 @@ export function SermonDeckPanel() {
   const moveDown = useCallback(
     (index: number) => moveInDeck(index, index + 1),
     [moveInDeck],
-  );
-
-  // The slide whose notes dialog is open, if it is still in the deck
-  // (it could have been removed while the dialog was open — saving
-  // then just closes, like the custom slide editor path).
-  const notesItem =
-    notesKey !== null
-      ? (deck.find((e) => deckKey(e) === notesKey) ?? null)
-      : null;
-
-  const notesLabel =
-    notesItem === null
-      ? ""
-      : notesItem.type === "verse"
-        ? notesItem.label
-        : notesItem.title || "Custom slide";
-
-  // The custom slide under edit, if it is still in the deck (it could
-  // have been removed while the editor was open — saving then no-ops
-  // with a toast instead of crashing). Matched by deck key so a
-  // duplicated custom slide edits its own copy, not its twin.
-  const editingItem =
-    editingId !== null
-      ? (deck.find(
-          (e): e is CustomSlideItem =>
-            e.type === "custom" && deckKey(e) === editingId,
-        ) ?? null)
-      : null;
-
-  const onSaveCustomSlide = useCallback(
-    (title: string | undefined, body: string) => {
-      // Editing updates the slide in place — never a duplicate entry. A refused save (blank body,
-      // or a slide removed mid-edit) toasts and leaves the editor open
-      // so nothing is lost.
-      if (editingId !== null) {
-        if (editingItem === null) {
-          showToast("Custom slide is no longer in the deck");
-          closeEditor();
-        } else if (updateCustomSlide(editingId, title, body)) {
-          showToast("Custom slide updated");
-          closeEditor();
-        } else {
-          showToast("Body text is required");
-        }
-      } else if (addCustomSlide(title, body) !== null) {
-        showToast("Added custom slide to sermon deck");
-        closeEditor();
-      } else {
-        showToast("Body text is required");
-      }
-    },
-    [
-      editingId,
-      editingItem,
-      addCustomSlide,
-      updateCustomSlide,
-      showToast,
-      closeEditor,
-    ],
   );
 
   const count = deck.length;
@@ -270,9 +134,7 @@ export function SermonDeckPanel() {
         >
           <div className="sermon-deck-header">
             <div className="sermon-deck-header-top">
-              <span className="sermon-deck-title" title={sermonTitle}>
-                {sermonTitle}
-              </span>
+              <span className="sermon-deck-title">Sermon Deck</span>
               <span className="sermon-deck-count" aria-live="polite">
                 {tab === "deck"
                   ? count === 0
@@ -331,21 +193,6 @@ export function SermonDeckPanel() {
               >
                 Background
               </button>
-              <button
-                type="button"
-                className="sermon-deck-secondary"
-                aria-expanded={editorOpen && editingId === null}
-                onClick={() => {
-                  // Toggle a fresh add-form; switching away from an edit.
-                  if (editorOpen && editingId === null) closeEditor();
-                  else {
-                    setEditingId(null);
-                    setEditorOpen(true);
-                  }
-                }}
-              >
-                Add Custom Slide
-              </button>
             </div>
             )}
           </div>
@@ -354,54 +201,22 @@ export function SermonDeckPanel() {
           {pickerOpen && (
             <BackgroundPicker onClose={() => setPickerOpen(false)} />
           )}
-          {editorOpen && (
-            <CustomSlideEditor
-              // Remount per target so the fields always start pre-filled
-              // with that slide (or empty for a new one). Keyed by deck
-              // key: duplicated custom slides share an id.
-              key={editingItem ? deckKey(editingItem) : "new"}
-              initialTitle={editingItem?.title ?? ""}
-              initialBody={editingItem?.body ?? ""}
-              saveLabel={editingItem ? "Save Changes" : "Add Slide"}
-              formLabel={editingItem ? "Edit custom slide" : "New custom slide"}
-              onSave={onSaveCustomSlide}
-              onCancel={closeEditor}
-            />
-          )}
           {count === 0 ? (
             <p className="sermon-deck-empty">
               No slides yet. Right-click a verse and choose “Add to Sermon
-              Deck”, or choose “Add Custom Slide”.
+              Deck”.
             </p>
           ) : (
             <ol className="sermon-deck-list">
               {deck.map((item, index) => {
-                // Verse slides render exactly as before; custom slides
-                // show their title/body through the same row layout.
                 const ref =
                   item.type === "verse"
                     ? item.label
                     : item.title || "Custom slide";
                 const preview = item.type === "verse" ? item.text : item.body;
                 // Per-entry identity (see deckKey): duplicated verses
-                // share an id, so rows, edits, and removal key off this.
+                // share an id, so rows key off this.
                 const key = deckKey(item);
-                const entryInner = (
-                  <>
-                    <span className="sermon-deck-ref">
-                      {ref}
-                      {item.type === "custom" && (
-                        <span
-                          className="sermon-deck-kind"
-                          aria-hidden="true"
-                        >
-                          Custom
-                        </span>
-                      )}
-                    </span>
-                    <span className="sermon-deck-preview">{preview}</span>
-                  </>
-                );
                 return (
                   <li
                     key={key}
@@ -411,29 +226,20 @@ export function SermonDeckPanel() {
                       {index + 1}
                     </span>
                     <div className="sermon-deck-main">
-                    {item.type === "custom" ? (
-                      // Custom rows are clickable (keyboard: Enter/Space):
-                      // they reopen the editor pre-filled for in-place
-                      // editing. Verse rows stay plain text.
-                      <button
-                        type="button"
-                        className="sermon-deck-entry sermon-deck-edit"
-                        aria-label={`Edit custom slide ${ref}`}
-                        onClick={() => {
-                          setEditingId(key);
-                          setEditorOpen(true);
-                        }}
-                      >
-                        {entryInner}
-                      </button>
-                    ) : (
-                      <span className="sermon-deck-entry">{entryInner}</span>
-                    )}
-                    <SlideNotesButton
-                      hasNotes={(item.notes?.length ?? 0) > 0}
-                      label={ref}
-                      onOpen={() => setNotesKey(key)}
-                    />
+                      <span className="sermon-deck-entry">
+                        <span className="sermon-deck-ref">
+                          {ref}
+                          {item.type === "custom" && (
+                            <span
+                              className="sermon-deck-kind"
+                              aria-hidden="true"
+                            >
+                              Custom
+                            </span>
+                          )}
+                        </span>
+                        <span className="sermon-deck-preview">{preview}</span>
+                      </span>
                     </div>
                     <span className="sermon-deck-actions">
                       <button
@@ -481,17 +287,6 @@ export function SermonDeckPanel() {
             <OutlineTab />
           )}
         </div>
-      )}
-      {notesItem !== null && (
-        <SlideNotesEditor
-          // Remount per target so the draft always starts from that
-          // slide's current notes.
-          key={deckKey(notesItem)}
-          slideLabel={notesLabel}
-          initialNotes={notesItem.notes ?? ""}
-          onSave={onSaveNotes}
-          onCancel={closeNotes}
-        />
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import type { Sermon, SermonDeckItem } from "../domain/types";
+import type { SermonDeckItem } from "../domain/types";
 import { getBackgroundPreset } from "../presentation/backgroundPresets";
 import { renderPresetBackground } from "./backgrounds";
 import { canvasMeasure, fitTextToBox } from "./textFit";
@@ -283,9 +283,19 @@ export function planSlide(
   return plan;
 }
 
-/** Pure mapping: whole sermon → slide plans in deck order. */
-export function planDeck(sermon: Sermon): PptxSlidePlan[] {
-  return planItems(sermon.deck, sermon.backgroundPresetId);
+/** What an export renders: fixed filename source, deck order, look. */
+export interface DeckExport {
+  title: string;
+  deck: readonly SermonDeckItem[];
+  backgroundPresetId: string;
+}
+
+/** Pure mapping: whole deck → slide plans in deck order. */
+export function planDeck(
+  deck: readonly SermonDeckItem[],
+  backgroundPresetId: string,
+): PptxSlidePlan[] {
+  return planItems(deck, backgroundPresetId);
 }
 
 /** Pure mapping: explicit items → plans (shares the fitter seam). */
@@ -346,9 +356,9 @@ function isTauriApp(): boolean {
 }
 
 /** Full-deck export: render, deliver, open. Throws for toasts. */
-export async function exportDeckPptx(sermon: Sermon): Promise<ExportResult> {
-  return renderAndDeliver(pptxFileName(sermon.title), () =>
-    generateDeckPptx(sermon),
+export async function exportDeckPptx(source: DeckExport): Promise<ExportResult> {
+  return renderAndDeliver(pptxFileName(source.title), () =>
+    generateDeckPptx(source),
   );
 }
 
@@ -400,8 +410,8 @@ async function renderAndDeliver(
  * is pre-fitted with a canvas measurer (DOM); without one (node/tests)
  * sizes stay at their ceilings and viewer shrink is the backstop.
  */
-export async function generateDeckPptx(sermon: Sermon): Promise<Blob> {
-  if (sermon.deck.length === 0) {
+export async function generateDeckPptx(source: DeckExport): Promise<Blob> {
+  if (source.deck.length === 0) {
     throw new Error("Cannot export an empty deck.");
   }
   const measure = canvasMeasure();
@@ -420,7 +430,7 @@ export async function generateDeckPptx(sermon: Sermon): Promise<Blob> {
   const { default: PptxGenJS } = await import("pptxgenjs");
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
-  const plans = planItems(sermon.deck, sermon.backgroundPresetId, fit);
+  const plans = planItems(source.deck, source.backgroundPresetId, fit);
   // Rendered backgrounds are deterministic per preset: resolve once each.
   const bgArt = new Map<string, { color: string } | { data: string }>();
   for (const slide of plans) {

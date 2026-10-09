@@ -15,11 +15,10 @@ import {
   resolveSlideBackground,
   sizePctToPt,
 } from "./pptx";
-import type { Sermon } from "../domain/types";
-import { freshSermon } from "../store/sermonStorage";
+import type { DeckExport } from "./pptx";
 
-function sermonWith(title: string): Sermon {
-  return { ...freshSermon(title), backgroundPresetId: "deep-navy" };
+function sermonWith(title: string): DeckExport {
+  return { title, deck: [], backgroundPresetId: "deep-navy" };
 }
 
 describe("pptx export mapping", () => {
@@ -145,7 +144,7 @@ describe("pptx export mapping", () => {
       { type: "verse", id: 1, label: "Genesis 1:1", text: "In the…" },
       { type: "custom", id: "c", title: "Grace", body: "Amazing…" },
     ];
-    const plans = planDeck(sermon);
+    const plans = planDeck(sermon.deck, sermon.backgroundPresetId);
     expect(plans).toHaveLength(2);
     expect(plans[0].texts[1].runs[0].text).toBe("Genesis 1:1");
     expect(plans[1].texts[0].runs[0].text).toBe("Grace");

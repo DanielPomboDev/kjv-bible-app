@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { getVersesByIds } from "../services/bible";
 import { copyText, formatVerses } from "../services/clipboard";
 import { useSelection } from "../store/selection";
-import { useActiveSermon } from "../store/activeSermon";
+import { useDeck } from "../store/deck";
 import { useToast } from "../store/toast";
 import type { ChapterVerse, SermonDeckItem } from "../domain/types";
 
@@ -33,7 +33,7 @@ export function CopyToolbar() {
         text: v.text,
       });
       const { added, skipped } =
-        useActiveSermon.getState().addManyToDeck(verses.map(toSlide));
+        useDeck.getState().addManyToDeck(verses.map(toSlide));
       if (added === 0) {
         showToast(
           skipped === 1

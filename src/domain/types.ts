@@ -175,9 +175,6 @@ export type SermonDeckItem = VerseSlideItem | CustomSlideItem;
 /** Legacy alias for the verse slide shape. */
 export type SermonDeckEntry = VerseSlideItem;
 
-/** Alias for contexts where "slide item" reads better than "deck item". */
-export type SlideItem = SermonDeckItem;
-
 /**
  * Stable per-entry deck identity for rows and edits: the duplicate
  * `uid` when present, else `type:id`. Entries created before

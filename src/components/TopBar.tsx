@@ -1,7 +1,6 @@
 import { useNavigation } from "../store/navigation";
 import { useSearch } from "../store/search";
 import { SermonDeckPanel } from "./SermonDeckPanel";
-import { SermonLibrary } from "../sermon/SermonLibrary";
 import { SettingsPanel } from "./SettingsPanel";
 import { HelpPanel } from "./HelpPanel";
 import { PanelLeftIcon, SearchIcon } from "./icons";
@@ -105,7 +104,6 @@ export function TopBar() {
         </button>
       </div>
       <div className="top-bar-actions">
-        <SermonLibrary />
         <SermonDeckPanel />
         <HelpPanel />
         <SettingsPanel />

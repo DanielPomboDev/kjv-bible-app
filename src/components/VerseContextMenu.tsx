@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useActiveSermon } from "../store/activeSermon";
+import { useDeck } from "../store/deck";
 import { useToast } from "../store/toast";
 import type { ChapterVerse, SermonDeckEntry } from "../domain/types";
 import { useFocusTrap } from "./focus";
@@ -26,7 +26,7 @@ export function VerseContextMenu({
   y: number;
   onClose: () => void;
 }) {
-  const addToDeck = useActiveSermon((s) => s.addToDeck);
+  const addToDeck = useDeck((s) => s.addToDeck);
   const showToast = useToast((s) => s.showToast);
   const [pos, setPos] = useState({ x, y });
   const menuRef = useRef<HTMLDivElement>(null);

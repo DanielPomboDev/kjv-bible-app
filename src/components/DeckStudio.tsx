@@ -7,21 +7,15 @@ import {
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { useActiveSermon } from "../store/activeSermon";
+import { useDeck } from "../store/deck";
 import { exportDeckPptx, exportToast } from "../export/pptx";
 import { useNavigation } from "../store/navigation";
-import {
-  deckKey,
-  type CustomSlideItem,
-  type SermonDeckItem,
-} from "../domain/types";
+import { deckKey, type SermonDeckItem } from "../domain/types";
 import { getBackgroundPreset } from "../presentation/backgroundPresets";
 import { BackgroundPicker } from "../presentation/BackgroundPicker";
 import { SlideView } from "./SlideView";
 import { CustomSlideView } from "./CustomSlideView";
 import { BlockSlideView } from "./BlockSlideView";
-import { BlockEditorCanvas } from "./BlockEditorCanvas";
-import { FreeformInspector } from "./FreeformInspector";
 import { useToast } from "../store/toast";
 import {
   ChevronLeftIcon,
@@ -35,17 +29,11 @@ import {
   STAGE_1080P_PX,
   previewScaleForWidth,
 } from "../presentation/stageScale";
-import { newBlockId, renderMode } from "../domain/blocks";
-import {
-  clipboardToSlideImage,
-  fileToSlideImage,
-  fitsImageBudget,
-} from "../presentation/images";
+import { renderMode } from "../domain/blocks";
 
-/** One-level undo for destructive deck ops (remove / clear / move / add). */
+/** One-level undo for destructive deck ops (remove / clear / move). */
 interface DeckUndo {
   deck: SermonDeckItem[];
-  sermonId: string;
   label: string;
   selectedKey: string | null;
 }
@@ -62,24 +50,17 @@ interface DeckUndo {
  * editable (title + body) inline.
  */
 export function DeckStudio() {
-  const deck = useActiveSermon((s) => s.sermon.deck);
-  const sermonTitle = useActiveSermon((s) => s.sermon.title);
-  const backgroundPresetId = useActiveSermon(
-    (s) => s.sermon.backgroundPresetId,
-  );
-  const addCustomSlide = useActiveSermon((s) => s.addCustomSlide);
-  const removeFromDeck = useActiveSermon((s) => s.removeFromDeck);
-  const duplicateDeckItem = useActiveSermon((s) => s.duplicateDeckItem);
-  const moveInDeck = useActiveSermon((s) => s.moveInDeck);
-  const clearDeck = useActiveSermon((s) => s.clearDeck);
-  const addBlock = useActiveSermon((s) => s.addBlock);
-  const convertToFreeform = useActiveSermon((s) => s.convertToFreeform);
+  const deck = useDeck((s) => s.deck);
+  const backgroundPresetId = useDeck((s) => s.backgroundPresetId);
+  const removeFromDeck = useDeck((s) => s.removeFromDeck);
+  const duplicateDeckItem = useDeck((s) => s.duplicateDeckItem);
+  const moveInDeck = useDeck((s) => s.moveInDeck);
+  const clearDeck = useDeck((s) => s.clearDeck);
   const setView = useNavigation((s) => s.setView);
   const showToast = useToast((s) => s.showToast);
 
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [drafting, setDrafting] = useState(false);
   const [dragKey, setDragKey] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{
     key: string;
@@ -90,13 +71,9 @@ export function DeckStudio() {
     null,
   );
   const [undo, setUndo] = useState<DeckUndo | null>(null);
-  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
-  const [overflowIds, setOverflowIds] = useState<string[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const filmstripRef = useRef<HTMLOListElement>(null);
   const bgButtonRef = useRef<HTMLButtonElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
-  const sermonId = useActiveSermon((s) => s.sermon.id);
 
   // Keep selection valid: default to first slide, follow removals to a neighbour.
   useEffect(() => {
@@ -119,20 +96,6 @@ export function DeckStudio() {
   const isFreeform =
     selectedCustom !== null && renderMode(selectedCustom) === "blocks";
 
-  // Block selection follows the slide: cleared on switch, dropped when
-  // its block disappears (delete/undo/template).
-  useEffect(() => {
-    setSelectedBlockId(null);
-    setOverflowIds([]);
-  }, [selectedKey]);
-  useEffect(() => {
-    if (selectedBlockId === null) return;
-    const blocks =
-      selectedCustom !== null ? (selectedCustom.blocks ?? []) : [];
-    if (!blocks.some((b) => b.id === selectedBlockId)) {
-      setSelectedBlockId(null);
-    }
-  }, [deck, selectedCustom, selectedBlockId]);
   const draggedItem =
     dragKey !== null && dragPos !== null
       ? (deck.find((e) => deckKey(e) === dragKey) ?? null)
@@ -184,19 +147,12 @@ export function DeckStudio() {
     return () => ro.disconnect();
   }, [stageWrapEl]);
 
-  // An undo snapshot belongs to one sermon — discard it on switch so undo
-  // can never restore another sermon's deck over the current one.
-  useEffect(() => {
-    setUndo(null);
-  }, [sermonId]);
-
   // Snapshot the deck before every structural op; single-level undo.
   const stash = useCallback(
     (label: string) => {
-      const state = useActiveSermon.getState();
+      const state = useDeck.getState();
       setUndo({
-        deck: state.sermon.deck,
-        sermonId: state.sermon.id,
+        deck: [...state.deck],
         label,
         selectedKey,
       });
@@ -206,12 +162,7 @@ export function DeckStudio() {
 
   const restoreUndo = useCallback(() => {
     if (undo === null) return;
-    const state = useActiveSermon.getState();
-    if (state.sermon.id !== undo.sermonId) {
-      setUndo(null);
-      return;
-    }
-    state.replaceSermon({ ...state.sermon, deck: undo.deck });
+    useDeck.getState().restoreDeck(undo.deck);
     setSelectedKey(undo.selectedKey);
     showToast(`Undid: ${undo.label}`);
     setUndo(null);
@@ -301,16 +252,20 @@ export function DeckStudio() {
 
   // One-way export to PowerPoint.
   const onExportPptx = useCallback(() => {
-    const sermon = useActiveSermon.getState().sermon;
-    if (sermon.deck.length === 0) {
+    const { deck: current, backgroundPresetId: bg } = useDeck.getState();
+    if (current.length === 0) {
       showToast("Nothing to export — the deck is empty");
       return;
     }
     setExporting(true);
     void (async () => {
       try {
-        const result = await exportDeckPptx(sermon);
-        showToast(exportToast(result, sermon.deck.length));
+        const result = await exportDeckPptx({
+          title: "Sermon Deck",
+          deck: [...current],
+          backgroundPresetId: bg,
+        });
+        showToast(exportToast(result, current.length));
       } catch (e) {
         showToast(`Export failed: ${e instanceof Error ? e.message : String(e)}`);
       } finally {
@@ -345,7 +300,7 @@ export function DeckStudio() {
     stash(`Duplicated ${label}`);
     if (duplicateDeckItem(selectedIndex)) {
       // Select the copy (inserted right after the source).
-      const next = useActiveSermon.getState().sermon.deck[selectedIndex + 1];
+      const next = useDeck.getState().deck[selectedIndex + 1];
       if (next) setSelectedKey(deckKey(next));
       showToast("Slide duplicated");
     } else {
@@ -374,133 +329,6 @@ export function DeckStudio() {
     clearDeck();
     setSelectedKey(null);
   }, [deck.length, clearDeck, stash]);
-
-  // Freeform editing flows. Adding to a legacy slide converts it
-  // first (one undo snapshot covers the whole sequence); verse slides
-  // never accept blocks — scripture stays verbatim.
-  const ensureFreeformTarget = useCallback((): string | null => {
-    if (selectedCustom === null) return null;
-    const key = deckKey(selectedCustom);
-    if (renderMode(selectedCustom) === "blocks") return key;
-    stash("Converted to freeform");
-    if (!convertToFreeform(key)) {
-      setUndo(null);
-      return null;
-    }
-    return key;
-  }, [selectedCustom, convertToFreeform, stash]);
-
-  const onAddText = useCallback(() => {
-    const key = ensureFreeformTarget();
-    if (key === null) return;
-    const block = {
-      type: "text" as const,
-      id: newBlockId(),
-      x: 10,
-      y: 38,
-      w: 80,
-      align: "center" as const,
-      font: "serif",
-      sizePct: 3,
-      text: "Double-click to edit",
-    };
-    stash("Added text box");
-    if (addBlock(key, block)) {
-      setSelectedBlockId(block.id);
-      showToast("Added text box");
-    } else {
-      setUndo(null);
-    }
-  }, [ensureFreeformTarget, addBlock, showToast, stash]);
-
-  const addImageBlock = useCallback(
-    (src: string) => {
-      const key = ensureFreeformTarget();
-      if (key === null) return;
-      const block = {
-        type: "image" as const,
-        id: newBlockId(),
-        x: 20,
-        y: 20,
-        w: 60,
-        src,
-        alt: "Imported image",
-      };
-      stash("Added image");
-      if (addBlock(key, block)) {
-        setSelectedBlockId(block.id);
-        showToast("Added image — set its alt text in the panel");
-      } else {
-        setUndo(null);
-      }
-    },
-    [ensureFreeformTarget, addBlock, showToast, stash],
-  );
-
-  const importImageFile = useCallback(
-    async (file: File) => {
-      const image = await fileToSlideImage(file);
-      if (image === null) {
-        showToast("Couldn't read that image file");
-        return;
-      }
-      const deck = useActiveSermon.getState().sermon.deck;
-      if (!fitsImageBudget(deck, image.src.length)) {
-        showToast("Image too large for offline storage");
-        return;
-      }
-      addImageBlock(image.src);
-    },
-    [addImageBlock, showToast],
-  );
-
-  const onCanvasPaste = useCallback(
-    async (e: React.ClipboardEvent) => {
-      const image = await clipboardToSlideImage(
-        e.nativeEvent as unknown as ClipboardEvent,
-      );
-      if (image === null) return;
-      e.preventDefault();
-      const deck = useActiveSermon.getState().sermon.deck;
-      if (!fitsImageBudget(deck, image.src.length)) {
-        showToast("Image too large for offline storage");
-        return;
-      }
-      if (selectedCustom === null) {
-        showToast("Select a custom slide to paste into");
-        return;
-      }
-      addImageBlock(image.src);
-    },
-    [addImageBlock, selectedCustom, showToast],
-  );
-
-  const onConvertSelected = useCallback(() => {
-    if (selectedCustom === null) return;
-    const key = deckKey(selectedCustom);
-    stash("Converted to freeform");
-    if (convertToFreeform(key)) {
-      showToast("Converted to freeform blocks");
-    } else {
-      setUndo(null);
-      showToast("Nothing to convert");
-    }
-  }, [selectedCustom, convertToFreeform, showToast, stash]);
-
-  const commitDraft = useCallback(
-    (title: string | undefined, body: string) => {
-      stash("Added custom slide");
-      const item = addCustomSlide(title, body);
-      if (item) {
-        setSelectedKey(deckKey(item));
-        setDrafting(false);
-        showToast("Added custom slide");
-      } else {
-        setUndo(null);
-      }
-    },
-    [addCustomSlide, showToast, stash],
-  );
 
   // Filmstrip keyboard: arrows move selection, Ctrl+Arrow reorders (the
   // keyboard parity for drag-and-drop — no pointer required).
@@ -719,13 +547,11 @@ export function DeckStudio() {
       role="tabpanel"
       id="view-panel-deck"
       aria-labelledby="view-tab-deck"
-      aria-label={`Deck studio for ${sermonTitle}`}
+      aria-label="Deck studio"
     >
       <header className="deck-studio-top">
         <div className="deck-studio-title-wrap">
-          <h2 className="deck-studio-title" title={sermonTitle}>
-            {sermonTitle}
-          </h2>
+          <h2 className="deck-studio-title">Sermon Deck</h2>
           <span className="deck-studio-count" aria-live="polite">
             {deck.length === 0
               ? "Empty deck"
@@ -733,16 +559,6 @@ export function DeckStudio() {
           </span>
         </div>
         <div className="deck-studio-top-actions">
-          <button
-            type="button"
-            className="sermon-deck-secondary"
-            onClick={() => {
-              setPickerOpen(false);
-              setDrafting(true);
-            }}
-          >
-            + Custom Slide
-          </button>
           <button
             type="button"
             ref={bgButtonRef}
@@ -799,12 +615,11 @@ export function DeckStudio() {
         </div>
       )}
 
-      {/* A blank draft opens the editor without committing anything —
-          no placeholder junk lands in the sermon until Save. */}
-      {deck.length === 0 && !drafting ? (
+      {/* Empty deck: queue verses from the reading pane. */}
+      {deck.length === 0 ? (
         <div className="deck-studio-empty">
           <p>
-            No slides yet. Add a custom slide above, or go to{" "}
+            No slides yet. Go to{" "}
             <button
               type="button"
               className="deck-studio-link"
@@ -814,13 +629,6 @@ export function DeckStudio() {
             </button>{" "}
             and right-click a verse → “Add to Sermon Deck”.
           </p>
-          <button
-            type="button"
-            className="sermon-deck-present"
-            onClick={() => setDrafting(true)}
-          >
-            Add Custom Slide
-          </button>
         </div>
       ) : (
         <div className="deck-studio-body">
@@ -922,7 +730,6 @@ export function DeckStudio() {
           <section
             className="deck-studio-canvas-wrap"
             aria-label="Slide preview"
-            onPaste={onCanvasPaste}
           >
             <div className="deck-studio-canvas-nav">
               <button
@@ -938,9 +745,7 @@ export function DeckStudio() {
                 <ChevronLeftIcon />
               </button>
               <span aria-live="polite" className="deck-studio-pos">
-                {deck.length === 0
-                  ? "New slide"
-                  : `${selectedIndex + 1} / ${deck.length}`}
+                {`${selectedIndex + 1} / ${deck.length}`}
               </span>
               <button
                 type="button"
@@ -955,40 +760,6 @@ export function DeckStudio() {
                 <ChevronRightIcon />
               </button>
             </div>
-            {selectedCustom !== null && (
-              <div
-                className="deck-studio-canvas-toolbar"
-                role="toolbar"
-                aria-label="Slide editing"
-              >
-                <button
-                  type="button"
-                  className="sermon-deck-secondary"
-                  onClick={onAddText}
-                >
-                  + Text
-                </button>
-                <button
-                  type="button"
-                  className="sermon-deck-secondary"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  + Image
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  aria-label="Import image file"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    e.target.value = "";
-                    if (file) void importImageFile(file);
-                  }}
-                />
-              </div>
-            )}
             {selected?.type === "custom" || selected?.type === "verse" ? (
               <div className="deck-studio-stage-fit" ref={setStageWrapEl}>
                 <div
@@ -1015,91 +786,28 @@ export function DeckStudio() {
                       slide={selected?.type === "verse" ? selected : null}
                     />
                   )}
-                  {isFreeform && selectedCustom !== null && (
-                    <BlockEditorCanvas
-                      slideKey={deckKey(selectedCustom)}
-                      blocks={selectedCustom.blocks ?? []}
-                      selectedId={selectedBlockId}
-                      onSelect={setSelectedBlockId}
-                      snapshot={stash}
-                      onOverflow={(ids) =>
-                        setOverflowIds((prev) =>
-                          prev.length === ids.length &&
-                          prev.every((v, i) => v === ids[i])
-                            ? prev
-                            : ids,
-                        )
-                      }
-                    />
-                  )}
                 </div>
               </div>
             ) : (
               <div className="deck-studio-stage-fit" ref={setStageWrapEl}>
-                <div
-                  className="deck-studio-canvas deck-studio-canvas-draft"
-                  style={
-                    stageBox
-                      ? { width: stageBox.w, height: stageBox.h }
-                      : undefined
-                  }
-                >
-                  <p>Your new slide preview appears here after you add it.</p>
+                <div className="deck-studio-canvas deck-studio-canvas-draft">
+                  <p>Select a slide to preview it.</p>
                 </div>
               </div>
             )}
           </section>
 
-          <aside className="deck-studio-inspector" aria-label="Slide editor">
-            {drafting ? (
-              <DraftSlideForm
-                onAdd={commitDraft}
-                onCancel={() => setDrafting(false)}
-              />
-            ) : selected === null ? (
+          <aside className="deck-studio-inspector" aria-label="Slide details">
+            {selected === null ? (
               <p>Select a slide.</p>
-            ) : selected.type === "verse" ? (
-              <InspectorForm
+            ) : (
+              <ReadOnlyCard
                 key={deckKey(selected)}
                 item={selected}
                 onDuplicate={duplicateSelected}
                 onRemove={removeSelected}
               />
-            ) : isFreeform && selectedCustom !== null ? (
-              <FreeformInspector
-                key={deckKey(selectedCustom)}
-                slideKey={deckKey(selectedCustom)}
-                item={selectedCustom}
-                selectedBlockId={selectedBlockId}
-                onSelectBlock={setSelectedBlockId}
-                overflowIds={overflowIds}
-                onAddText={onAddText}
-                onPickImage={() => fileInputRef.current?.click()}
-                snapshot={stash}
-              />
-            ) : selectedCustom !== null ? (
-              <>
-                <InspectorForm
-                  key={deckKey(selectedCustom)}
-                  item={selectedCustom}
-                  onDuplicate={duplicateSelected}
-                  onRemove={removeSelected}
-                />
-                <div className="deck-studio-convert">
-                  <button
-                    type="button"
-                    className="sermon-deck-secondary"
-                    onClick={onConvertSelected}
-                  >
-                    Convert to freeform
-                  </button>
-                  <p className="custom-slide-hint">
-                    Unlock text boxes, images, fonts, and layouts. Undoable;
-                    verse slides stay as they are.
-                  </p>
-                </div>
-              </>
-            ) : null}
+            )}
           </aside>
         </div>
       )}
@@ -1128,7 +836,11 @@ export function DeckStudio() {
   );
 }
 
-function InspectorForm({
+/**
+ * Read-only slide summary: slides are assembled here and designed in
+ * PowerPoint after export — nothing here edits slide content.
+ */
+function ReadOnlyCard({
   item,
   onDuplicate,
   onRemove,
@@ -1137,181 +849,26 @@ function InspectorForm({
   onDuplicate: () => void;
   onRemove: () => void;
 }) {
-  const updateCustomSlide = useActiveSermon((s) => s.updateCustomSlide);
-  const setSlideNotes = useActiveSermon((s) => s.setSlideNotes);
-  const showToast = useToast((s) => s.showToast);
-  const key = deckKey(item);
-  const isCustom = item.type === "custom";
-
-  const [title, setTitle] = useState(
-    isCustom ? ((item as CustomSlideItem).title ?? "") : "",
-  );
-  const [body, setBody] = useState(
-    isCustom ? (item as CustomSlideItem).body : "",
-  );
-  const [notes, setNotes] = useState(item.notes ?? "");
-  const [savedAt, setSavedAt] = useState<number | null>(null);
-
-  const canSaveCustom = body.trim().length > 0;
-  const customDirty =
-    isCustom &&
-    (title.trim() !== ((item as CustomSlideItem).title ?? "") ||
-      body.trim() !== (item as CustomSlideItem).body);
-  const notesDirty = notes.trim() !== (item.notes ?? "");
-  const dirty = customDirty || notesDirty;
-
-  // Quiet autosave: blur commits valid edits without toast spam. The
-  // status line below confirms; explicit buttons still toast.
-  const autosave = () => {
-    let saved = false;
-    if (customDirty && canSaveCustom) {
-      const cleanTitle = title.trim();
-      if (
-        updateCustomSlide(
-          key,
-          cleanTitle === "" ? undefined : cleanTitle,
-          body.trim(),
-        )
-      ) {
-        saved = true;
-      }
-    }
-    if (notesDirty) {
-      setSlideNotes(key, notes.trim());
-      saved = true;
-    }
-    if (saved) setSavedAt(Date.now());
-  };
-
-  const saveCustom = () => {
-    if (!canSaveCustom) {
-      showToast("Body text is required");
-      return;
-    }
-    const cleanTitle = title.trim();
-    if (
-      updateCustomSlide(
-        key,
-        cleanTitle === "" ? undefined : cleanTitle,
-        body.trim(),
-      )
-    ) {
-      setSavedAt(Date.now());
-      showToast("Slide updated");
-    } else {
-      showToast("Could not save — slide missing?");
-    }
-  };
-
-  const saveNotes = () => {
-    setSlideNotes(key, notes.trim());
-    setSavedAt(Date.now());
-    showToast(
-      notes.trim().length === 0 ? "Notes cleared" : "Notes saved",
-    );
-  };
-
   const label =
     item.type === "verse" ? item.label : item.title || "Custom slide";
+  const text = item.type === "verse" ? item.text : item.body;
 
   return (
     <div className="deck-studio-form">
-      <h3 className="deck-studio-form-title">Edit card — {label}</h3>
-
-      {isCustom ? (
-        <>
-          <label className="custom-slide-label" htmlFor="deck-studio-title">
-            Title (optional)
-          </label>
-          <input
-            id="deck-studio-title"
-            type="text"
-            className="custom-slide-input"
-            value={title}
-            placeholder="e.g. The Good Shepherd"
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={autosave}
-          />
-          <label className="custom-slide-label" htmlFor="deck-studio-body">
-            Body
-          </label>
-          <textarea
-            id="deck-studio-body"
-            className="custom-slide-input custom-slide-body"
-            value={body}
-            rows={6}
-            aria-required="true"
-            onChange={(e) => setBody(e.target.value)}
-            onBlur={autosave}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                saveCustom();
-              }
-            }}
-          />
-          <div className="custom-slide-actions">
-            <button
-              type="button"
-              className="sermon-deck-present"
-              disabled={!canSaveCustom}
-              onClick={saveCustom}
-            >
-              Save Changes
-            </button>
-          </div>
-          {!canSaveCustom && (
-            <p className="custom-slide-hint">Body text is required.</p>
-          )}
-        </>
-      ) : (
-        <div className="deck-studio-verse">
-          <p className="deck-studio-verse-ref">{item.label}</p>
-          <p className="deck-studio-verse-text">
-            {item.type === "verse" ? item.text : ""}
-          </p>
-          <p className="custom-slide-hint">
-            Scripture text is read-only. Duplicate to show it twice, or add
-            presenter notes below.
-          </p>
-        </div>
+      <h3 className="deck-studio-form-title">{label}</h3>
+      <p className="deck-studio-verse-text">{text}</p>
+      {item.type === "custom" && (item.blocks ?? []).length > 0 && (
+        <p className="custom-slide-hint">
+          Freeform slide ({item.blocks?.length} block
+          {item.blocks?.length === 1 ? "" : "s"}) — edit it in PowerPoint
+          after export.
+        </p>
       )}
-
-      <label className="custom-slide-label" htmlFor="deck-studio-notes">
-        Presenter notes (private)
-      </label>
-      <textarea
-        id="deck-studio-notes"
-        className="custom-slide-input custom-slide-body"
-        value={notes}
-        rows={4}
-        placeholder="What to remember when this slide is up?"
-        onChange={(e) => setNotes(e.target.value)}
-        onBlur={autosave}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-            e.preventDefault();
-            saveNotes();
-          }
-        }}
-      />
-      <div className="custom-slide-actions">
-        <button
-          type="button"
-          className="sermon-deck-secondary"
-          onClick={saveNotes}
-        >
-          Save Notes
-        </button>
-      </div>
-
-      <p className="deck-studio-saved" role="status">
-        {dirty
-          ? "Unsaved changes"
-          : savedAt !== null
-            ? `Saved ${new Date(savedAt).toLocaleTimeString()}`
-            : "No changes yet"}
-      </p>
+      {item.type === "verse" && (
+        <p className="custom-slide-hint">
+          Scripture is read-only. Duplicate to show it twice.
+        </p>
+      )}
 
       <div
         className="deck-studio-row-actions"
@@ -1336,78 +893,5 @@ function InspectorForm({
         </button>
       </div>
     </div>
-  );
-}
-
-/**
- * Blank new-slide draft: commits nothing until Save, so cancelled adds
- * leave no placeholder junk in the sermon.
- */
-function DraftSlideForm({
-  onAdd,
-  onCancel,
-}: {
-  onAdd: (title: string | undefined, body: string) => void;
-  onCancel: () => void;
-}) {
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const canSave = body.trim().length > 0;
-
-  return (
-    <form
-      className="deck-studio-form"
-      aria-label="New custom slide"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (!canSave) return;
-        const cleanTitle = title.trim();
-        onAdd(cleanTitle === "" ? undefined : cleanTitle, body.trim());
-      }}
-    >
-      <h3 className="deck-studio-form-title">New custom slide</h3>
-      <label className="custom-slide-label" htmlFor="deck-studio-draft-title">
-        Title (optional)
-      </label>
-      <input
-        id="deck-studio-draft-title"
-        type="text"
-        className="custom-slide-input"
-        value={title}
-        placeholder="e.g. The Good Shepherd"
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <label className="custom-slide-label" htmlFor="deck-studio-draft-body">
-        Body
-      </label>
-      <textarea
-        id="deck-studio-draft-body"
-        className="custom-slide-input custom-slide-body"
-        value={body}
-        rows={6}
-        aria-required="true"
-        placeholder="Sermon point or heading text"
-        onChange={(e) => setBody(e.target.value)}
-      />
-      <div className="custom-slide-actions">
-        <button
-          type="submit"
-          className="sermon-deck-present"
-          disabled={!canSave}
-        >
-          Add Slide
-        </button>
-        <button
-          type="button"
-          className="sermon-deck-secondary"
-          onClick={onCancel}
-        >
-          Cancel
-        </button>
-      </div>
-      {!canSave && (
-        <p className="custom-slide-hint">Body text is required to save.</p>
-      )}
-    </form>
   );
 }

@@ -11,8 +11,7 @@ Go to [**Releases**](https://github.com/DanielPomboDev/kjv-bible-app/releases), 
 ![Reading Genesis 1 with the book list and chapter grid](screenshots/reading.png)
 ![Searching for "faith" across the whole Bible](screenshots/search.png)
 ![Selecting three verses with Copy, Add to Deck, and Clear actions](screenshots/selection.png)
-![The sermon deck panel with slides, reorder controls, and notes](screenshots/deck.png)
-![The sermon library with backup Export and Import](screenshots/library.png)
+![The sermon deck panel with slides and reorder controls](screenshots/deck.png)
 ![The shortcuts help dialog](screenshots/help.png)
 
 ## What you can do
@@ -20,13 +19,13 @@ Go to [**Releases**](https://github.com/DanielPomboDev/kjv-bible-app/releases), 
 - **Read** all 66 books (31,102 verses). The app reopens where you left off.
 - **Search** any word or phrase, or jump straight to a reference like `John 3:16` (`Ctrl+K`).
 - **Select verses** with click, `Ctrl+Click`, or `Shift+Click` — then copy them as clean text or queue them all into your sermon deck at once.
-- **Build sermons** — each sermon keeps its own outline, slide deck, and background. Back them up with Backup/Import in the Sermon Library.
-- **Export to PowerPoint** — download any sermon as a `.pptx` (verses, custom slides, images, notes as speaker notes) and keep designing and presenting in PowerPoint.
+- **Assemble the deck** — queue verses, reorder them, duplicate, pick a background, sketch a planning outline.
+- **Export to PowerPoint** — download the deck as a `.pptx` (verses, custom slides, images, notes as speaker notes) and keep designing and presenting in PowerPoint.
 - **Adjust** — light/dark theme, reading text size, and a `?` button listing every shortcut.
 
 ## Your data
 
-Everything stays on your computer. Sermons are stored locally — use **Export** in the Sermon Library to keep backup files of work you can't lose.
+Everything stays on your computer in a single local deck — no account, no sync.
 
 ## Help & feedback
 
