@@ -28,10 +28,14 @@ const SECTIONS: { title: string; shortcuts: Shortcut[] }[] = [
   {
     title: "Sermon deck",
     shortcuts: [
-      { keys: ["Right-click"], action: "Present now / add one verse" },
+      { keys: ["Right-click"], action: "Add one verse to the deck" },
       {
         keys: ["Add to Deck"],
         action: "Queue every selected verse at once",
+      },
+      {
+        keys: ["Export .pptx"],
+        action: "Download the deck for PowerPoint (one-way)",
       },
     ],
   },
@@ -55,14 +59,6 @@ const SECTIONS: { title: string; shortcuts: Shortcut[] }[] = [
       { keys: ["Del"], action: "Delete selected box" },
       { keys: ["Esc"], action: "Stop editing / deselect" },
       { keys: ["Ctrl", "V"], action: "Paste an image from clipboard" },
-    ],
-  },
-  {
-    title: "Presenting",
-    shortcuts: [
-      { keys: ["→", "Space"], action: "Next slide" },
-      { keys: ["←"], action: "Previous slide" },
-      { keys: ["Esc"], action: "Exit presentation" },
     ],
   },
 ];

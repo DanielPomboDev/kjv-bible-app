@@ -8,7 +8,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { useActiveSermon } from "../store/activeSermon";
-import { usePresentFlow } from "../store/presentFlow";
+import { downloadDeckPptx } from "../export/pptx";
 import { useNavigation } from "../store/navigation";
 import {
   deckKey,
@@ -297,16 +297,30 @@ export function DeckStudio() {
           "--stage-padding": `${STAGE_1080P_PX.padding * previewScaleForWidth(stageBox.w)}px`,
         }) as CSSProperties | undefined;
 
-  const onPresent = useCallback(() => {
-    if (deck.length === 0) return;
+  const [exporting, setExporting] = useState(false);
+
+  // One-way export to PowerPoint: the deck downloads as .pptx for
+  // designing and presenting there. Anchor download (no Tauri plugins).
+  const onExportPptx = useCallback(() => {
     const sermon = useActiveSermon.getState().sermon;
-    usePresentFlow.getState().requestPresent({
-      kind: "deck",
-      deck: [...deck],
-      background: sermon.backgroundPresetId,
-      outline: [...sermon.outline],
-    });
-  }, [deck]);
+    if (sermon.deck.length === 0) {
+      showToast("Nothing to export — the deck is empty");
+      return;
+    }
+    setExporting(true);
+    void (async () => {
+      try {
+        await downloadDeckPptx(sermon);
+        showToast(
+          `Exported ${sermon.deck.length} slide${sermon.deck.length === 1 ? "" : "s"} to PowerPoint`,
+        );
+      } catch (e) {
+        showToast(`Export failed: ${e instanceof Error ? e.message : String(e)}`);
+      } finally {
+        setExporting(false);
+      }
+    })();
+  }, [showToast]);
 
   const selectAndFocus = useCallback((key: string) => {
     setSelectedKey(key);
@@ -748,9 +762,11 @@ export function DeckStudio() {
               <button
                 type="button"
                 className="sermon-deck-present"
-                onClick={onPresent}
+                disabled={exporting}
+                title="Download the deck as .pptx — continue editing in PowerPoint (one-way)"
+                onClick={onExportPptx}
               >
-                Present
+                {exporting ? "Exporting…" : "Export .pptx"}
               </button>
               <button
                 type="button"

@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { usePresentFlow } from "../store/presentFlow";
 import { useActiveSermon } from "../store/activeSermon";
 import { useToast } from "../store/toast";
 import type { ChapterVerse, SermonDeckEntry } from "../domain/types";
 import { useFocusTrap } from "./focus";
 
 /**
- * Right-click menu on a verse: "Present Now" (fullscreen presentation
- * comes in a later step — for now the verse is logged to the console)
- * and "Add to Sermon Deck" (queues it in the open sermon's deck). Plain
+ * Right-click menu on a verse: "Add to Sermon Deck" (queues it in the
+ * open sermon's deck for PowerPoint export) and copy actions. Plain
  * DOM, styled with popover tokens (surface, radius-lg, shadow-2), like
  * the settings popover.
  *
@@ -106,30 +104,6 @@ export function VerseContextMenu({
     [],
   );
 
-  const onPresentNow = useCallback(() => {
-    // Open the fullscreen stage on this one verse only — the sermon deck
-    // is untouched. The stage renders with
-    // the open sermon's background preset, and the presenter window gets
-    // the open sermon's outline for reference. The monitor gate (picker,
-    // or the single-display notes warning) runs before the stage opens —
-    // see store/presentFlow.ts.
-    if (verse) {
-      const sermon = useActiveSermon.getState().sermon;
-      usePresentFlow.getState().requestPresent({
-        kind: "single",
-        slide: {
-          type: "verse",
-          id: verse.id,
-          label: `${verse.bookName} ${verse.chapter}:${verse.verse}`,
-          text: verse.text,
-        },
-        background: sermon.backgroundPresetId,
-        outline: [...sermon.outline],
-      });
-    }
-    onClose();
-  }, [verse, onClose]);
-
   const onAddToDeck = useCallback(() => {
     if (verse) {
       const ref = `${verse.bookName} ${verse.chapter}:${verse.verse}`;
@@ -151,14 +125,6 @@ export function VerseContextMenu({
     >
       <button
         ref={firstItemRef}
-        type="button"
-        className="verse-context-menu-item"
-        role="menuitem"
-        onClick={onPresentNow}
-      >
-        Present Now
-      </button>
-      <button
         type="button"
         className="verse-context-menu-item"
         role="menuitem"

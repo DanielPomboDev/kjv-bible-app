@@ -16,8 +16,7 @@ import { fitText } from "./slideFit";
  * The body auto-fits its box exactly like a verse (see slideFit); the
  * title keeps a fixed size outside the fitted box so it sits in the
  * same place every slide. A title-less slide shows just the centered
- * body. Keyboard navigation is owned by PresentationWindow and is
- * identical for both slide types.
+ * body.
  */
 export function CustomSlideView({
   slide,

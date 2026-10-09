@@ -232,45 +232,6 @@ export interface Sermon {
 }
 
 /**
- * One slide on the presentation stage — what the Rust backend holds as
- * the current slide state (see src-tauri/src/presentation.rs). The same
- * discriminated union as the sermon deck: verse slides carry the
- * ready-made reference as `label`, custom slides their `title`/`body`.
- * The deck travels to the backend untouched, so both step through
- * identically by index.
- */
-export type StageSlide = SermonDeckItem;
-
-/**
- * Stage snapshot pushed from Rust (`presentation://slide` event and the
- * initial pull): the slides in order, which one is current, which
- * background preset to render, and the open sermon's outline at present
- * time. A single "Present Now" verse is a one-slide deck, so navigation
- * is inert there. The outline (like each slide's `notes`) rides along
- * for the presenter window only — the audience stage never renders it.
- */
-export interface StageState {
-  deck: StageSlide[];
-  index: number;
-  /**
-   * Selected background preset id (see
-   * presentation/backgroundPresets.ts) — set at present time from the
-   * open sermon's `backgroundPresetId`. The stage resolves it with
-   * `getBackgroundPreset`, which falls back to Classic Black for unknown
-   * or missing ids.
-   */
-  background: string;
-  /**
-   * The app's light/dark theme at present time (`store/settings.ts`) —
-   * the presenter window applies it so its chrome matches the main app.
-   * The audience stage ignores it (stage tokens only).
-   */
-  theme: "light" | "dark";
-  /** The open sermon's outline sections — presenter reference only. */
-  outline: OutlineSection[];
-}
-
-/**
  * The backend's verdict on a query, plus its results:
  * - `verse`:   "John 3:16" — that single verse
  * - `chapter`: "John 3" — every verse of the chapter, in order

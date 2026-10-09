@@ -15,7 +15,6 @@ import {
 } from "../domain/blocks";
 import { loadLibraryState, isPresetId } from "./sermonStorage";
 import { useSermonLibrary } from "./sermonLibrary";
-import { syncPresentingDeck } from "../services/presentation";
 
 /**
  * The currently open sermon — only one is open at a time.
@@ -193,19 +192,9 @@ function findCustomIndex(
 export const useActiveSermon = create<ActiveSermonState>()((set, get) => {
   // Set state and echo the new open sermon to the library (which
   // persists). The library never calls back, so this always terminates.
-  // Deck/outline edits additionally push to a running presentation, if
-  // any, so mid-sermon changes in the main window appear live in both
-  // windows without restarting: the reference comparison below skips
-  // title/background edits (same array refs), and the backend itself
-  // no-ops while not presenting. Fire-and-forget — a failed push just
-  // leaves the last good deck up, and the next edit retries.
   const commit = (sermon: Sermon) => {
-    const prev = get().sermon;
     set({ sermon });
     useSermonLibrary.getState().syncActive(sermon);
-    if (sermon.deck !== prev.deck || sermon.outline !== prev.outline) {
-      void syncPresentingDeck(sermon.deck, sermon.outline).catch(() => {});
-    }
   };
 
   return {

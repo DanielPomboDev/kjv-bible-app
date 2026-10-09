@@ -14,15 +14,14 @@ Go to [**Releases**](https://github.com/DanielPomboDev/kjv-bible-app/releases), 
 ![The sermon deck panel with slides, reorder controls, and notes](screenshots/deck.png)
 ![The sermon library with backup Export and Import](screenshots/library.png)
 ![The shortcuts help dialog](screenshots/help.png)
-![Presenting: fullscreen audience slide with the presenter window on top](screenshots/stage.png)
 
 ## What you can do
 
 - **Read** all 66 books (31,102 verses). The app reopens where you left off.
 - **Search** any word or phrase, or jump straight to a reference like `John 3:16` (`Ctrl+K`).
 - **Select verses** with click, `Ctrl+Click`, or `Shift+Click` — then copy them as clean text or queue them all into your sermon deck at once.
-- **Build sermons** — each sermon keeps its own outline, slide deck, and background. Back them up with Export/Import in the Sermon Library.
-- **Present** — fullscreen slides for the congregation plus a private presenter view with your notes (`→` next, `←` back, `Esc` exit).
+- **Build sermons** — each sermon keeps its own outline, slide deck, and background. Back them up with Backup/Import in the Sermon Library.
+- **Export to PowerPoint** — download any sermon as a `.pptx` (verses, custom slides, images, notes as speaker notes) and keep designing and presenting in PowerPoint.
 - **Adjust** — light/dark theme, reading text size, and a `?` button listing every shortcut.
 
 ## Your data

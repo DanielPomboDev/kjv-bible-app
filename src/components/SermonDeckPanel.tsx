@@ -5,7 +5,6 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { usePresentFlow } from "../store/presentFlow";
 import { useActiveSermon } from "../store/activeSermon";
 import {
   deckKey,
@@ -178,24 +177,6 @@ export function SermonDeckPanel() {
     [moveInDeck],
   );
 
-  const onPresent = useCallback(() => {
-    if (deck.length > 0) {
-      setOpen(false);
-      // Snapshot the open sermon's background + outline so the stage
-      // renders the new look picked just before presenting and the
-      // presenter window has its reference material. The monitor gate
-      // (picker, or the single-display notes warning) runs before the
-      // stage opens — see store/presentFlow.ts.
-      const sermon = useActiveSermon.getState().sermon;
-      usePresentFlow.getState().requestPresent({
-        kind: "deck",
-        deck: [...deck],
-        background: sermon.backgroundPresetId,
-        outline: [...sermon.outline],
-      });
-    }
-  }, [deck]);
-
   // The slide whose notes dialog is open, if it is still in the deck
   // (it could have been removed while the dialog was open — saving
   // then just closes, like the custom slide editor path).
@@ -342,15 +323,6 @@ export function SermonDeckPanel() {
             </div>
             {tab === "deck" && (
             <div className="sermon-deck-header-actions">
-              {count > 0 && (
-                <button
-                  type="button"
-                  className="sermon-deck-present"
-                  onClick={onPresent}
-                >
-                  Present
-                </button>
-              )}
               <button
                 type="button"
                 className="sermon-deck-secondary"

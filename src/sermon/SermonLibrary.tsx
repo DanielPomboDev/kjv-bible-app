@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSermonLibrary } from "../store/sermonLibrary";
 import { useToast } from "../store/toast";
 import { isSermon } from "../store/sermonStorage";
+import { downloadDeckPptx } from "../export/pptx";
 import type { Sermon } from "../domain/types";
 import { CloseIcon, LibraryIcon } from "../components/icons";
 import { useFocusReturn } from "../components/focus";
@@ -157,6 +158,20 @@ export function SermonLibrary() {
     setConfirmingId(null);
     setDraft(title);
     setRenamingId(id);
+  };
+
+  // One-way export to PowerPoint (anchor download, no plugins).
+  const onExportPptx = async (sermon: Sermon) => {
+    if (sermon.deck.length === 0) {
+      showToast("Nothing to export — that sermon has no slides");
+      return;
+    }
+    try {
+      await downloadDeckPptx(sermon);
+      showToast(`Exported "${sermon.title}" to PowerPoint`);
+    } catch (e) {
+      showToast(`Export failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
   };
 
   const count = sermons.length;
@@ -361,13 +376,22 @@ export function SermonLibrary() {
                         <button
                           type="button"
                           className="sermon-library-btn"
-                          aria-label={`Export ${sermon.title} to a backup file`}
+                          aria-label={`Export ${sermon.title} to PowerPoint`}
+                          title="Download as .pptx — continue editing in PowerPoint (one-way)"
+                          onClick={() => void onExportPptx(sermon)}
+                        >
+                          PowerPoint
+                        </button>
+                        <button
+                          type="button"
+                          className="sermon-library-btn"
+                          aria-label={`Back up ${sermon.title} to a file`}
                           onClick={() => {
                             downloadBackup(sermon);
-                            showToast(`Exported "${sermon.title}"`);
+                            showToast(`Backed up "${sermon.title}"`);
                           }}
                         >
-                          Export
+                          Backup
                         </button>
                         <button
                           type="button"
