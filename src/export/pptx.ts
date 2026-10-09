@@ -274,6 +274,57 @@ export async function downloadDeckPptx(sermon: Sermon): Promise<void> {
   }
 }
 
+/** Blob → base64 without blowing the call stack on multi-MB files. */
+function blobToBase64(blob: Blob): Promise<string> {
+  return blob.arrayBuffer().then((buffer) => {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    const CHUNK = 0x8000;
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+    }
+    return btoa(binary);
+  });
+}
+
+export interface ExportResult {
+  /** What the user should open or look for. */
+  fileName: string;
+  /** Full path when saved through Tauri; bare name on fallback. */
+  path: string;
+  /** True when the OS opened it (PowerPoint) already. */
+  opened: boolean;
+}
+
+/**
+ * Export pipeline: render → save to Downloads via the backend → open
+ * with the default app (PowerPoint). Outside Tauri (plain browser dev)
+ * it falls back to an anchor download that the user opens by hand.
+ * Never throws for delivery problems — reports them in the result.
+ */
+export async function exportDeckPptx(sermon: Sermon): Promise<ExportResult> {
+  const blob = await generateDeckPptx(sermon);
+  const fileName = pptxFileName(sermon.title);
+  try {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const base64Data = await blobToBase64(blob);
+    const path = (await invoke<string>("save_export", {
+      fileName,
+      base64Data,
+    })) as string;
+    try {
+      const { openPath } = await import("@tauri-apps/plugin-opener");
+      await openPath(path);
+      return { fileName, path, opened: true };
+    } catch {
+      return { fileName, path, opened: false };
+    }
+  } catch {
+    await downloadDeckPptx(sermon);
+    return { fileName, path: fileName, opened: false };
+  }
+}
+
 /**
  * Render a sermon to a .pptx Blob. Lazy-imports pptxgenjs (startup
  * stays fast) and throws on an empty deck for the caller to toast.

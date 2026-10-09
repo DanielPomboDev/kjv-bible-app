@@ -8,7 +8,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { useActiveSermon } from "../store/activeSermon";
-import { downloadDeckPptx } from "../export/pptx";
+import { exportDeckPptx } from "../export/pptx";
 import { useNavigation } from "../store/navigation";
 import {
   deckKey,
@@ -299,8 +299,8 @@ export function DeckStudio() {
 
   const [exporting, setExporting] = useState(false);
 
-  // One-way export to PowerPoint: the deck downloads as .pptx for
-  // designing and presenting there. Anchor download (no Tauri plugins).
+  // One-way export to PowerPoint: saves to Downloads and opens with
+  // the default app (anchor download outside Tauri).
   const onExportPptx = useCallback(() => {
     const sermon = useActiveSermon.getState().sermon;
     if (sermon.deck.length === 0) {
@@ -310,9 +310,12 @@ export function DeckStudio() {
     setExporting(true);
     void (async () => {
       try {
-        await downloadDeckPptx(sermon);
+        const result = await exportDeckPptx(sermon);
+        const count = `${sermon.deck.length} slide${sermon.deck.length === 1 ? "" : "s"}`;
         showToast(
-          `Exported ${sermon.deck.length} slide${sermon.deck.length === 1 ? "" : "s"} to PowerPoint`,
+          result.opened
+            ? `Opened ${result.fileName} in PowerPoint (${count})`
+            : `Saved ${result.fileName} — open it in PowerPoint (${count})`,
         );
       } catch (e) {
         showToast(`Export failed: ${e instanceof Error ? e.message : String(e)}`);

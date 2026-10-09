@@ -1,5 +1,6 @@
 mod clipboard;
 mod db;
+mod export;
 mod search;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -14,6 +15,7 @@ pub fn run() {
             db::get_chapter,
             db::get_verses_by_ids,
             search::search_bible,
+            export::save_export,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSermonLibrary } from "../store/sermonLibrary";
 import { useToast } from "../store/toast";
 import { isSermon } from "../store/sermonStorage";
-import { downloadDeckPptx } from "../export/pptx";
+import { exportDeckPptx } from "../export/pptx";
 import type { Sermon } from "../domain/types";
 import { CloseIcon, LibraryIcon } from "../components/icons";
 import { useFocusReturn } from "../components/focus";
@@ -160,15 +160,20 @@ export function SermonLibrary() {
     setRenamingId(id);
   };
 
-  // One-way export to PowerPoint (anchor download, no plugins).
+  // One-way export to PowerPoint (saves + opens, anchor fallback).
   const onExportPptx = async (sermon: Sermon) => {
     if (sermon.deck.length === 0) {
       showToast("Nothing to export — that sermon has no slides");
       return;
     }
     try {
-      await downloadDeckPptx(sermon);
-      showToast(`Exported "${sermon.title}" to PowerPoint`);
+      const result = await exportDeckPptx(sermon);
+      const count = `${sermon.deck.length} slide${sermon.deck.length === 1 ? "" : "s"}`;
+      showToast(
+        result.opened
+          ? `Opened ${result.fileName} in PowerPoint (${count})`
+          : `Saved ${result.fileName} — open it in PowerPoint (${count})`,
+      );
     } catch (e) {
       showToast(`Export failed: ${e instanceof Error ? e.message : String(e)}`);
     }
