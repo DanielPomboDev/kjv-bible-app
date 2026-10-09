@@ -10,6 +10,7 @@ import { CopyToolbar } from "./components/CopyToolbar";
 import { VerseContextMenu } from "./components/VerseContextMenu";
 import { MonitorPicker } from "./presentation/MonitorPicker";
 import { Toast } from "./components/Toast";
+import { DeckStudio } from "./components/DeckStudio";
 import { useNavigation } from "./store/navigation";
 import { useSearch } from "./store/search";
 import "./styles/tokens.css";
@@ -22,6 +23,7 @@ import "./styles/help.css";
 import "./styles/settings.css";
 import "./styles/context-menu.css";
 import "./styles/sermon-deck.css";
+import "./styles/deck-studio.css";
 import "./styles/sermon-library.css";
 import "./styles/outline.css";
 import "./styles/background-picker.css";
@@ -32,6 +34,7 @@ function App() {
   const chapter = useNavigation((s) => s.chapter);
   const selectChapter = useNavigation((s) => s.selectChapter);
   const sidebarOpen = useNavigation((s) => s.sidebarOpen);
+  const activeView = useNavigation((s) => s.activeView);
   const openSearch = useSearch((s) => s.openSearch);
   const [loaded, setLoaded] = useState<Chapter | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -132,9 +135,11 @@ function App() {
   };
 
   // ←/→ step chapters (same as the buttons below). Skipped inside text
-  // fields and with Ctrl/Cmd/Alt held, so typing and OS shortcuts win.
+  // fields, in Deck Studio (where arrows drive the filmstrip), and with
+  // Ctrl/Cmd/Alt held, so typing and OS shortcuts win.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (useNavigation.getState().activeView === "deck") return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       const target = e.target;
@@ -202,11 +207,24 @@ function App() {
   }, []);
 
   return (
-    <div className="app-shell" data-sidebar={sidebarOpen ? "open" : "closed"}>
-      <BookList />
+    <div
+      className="app-shell"
+      data-sidebar={
+        activeView === "read" && sidebarOpen ? "open" : "closed"
+      }
+    >
+      {activeView === "read" && <BookList />}
       <main className="reading-pane">
         <TopBar />
-        <div className="chapter-scroll">
+        {activeView === "deck" ? (
+          <DeckStudio />
+        ) : (
+        <div
+          className="chapter-scroll"
+          id="view-panel-read"
+          role="tabpanel"
+          aria-labelledby="view-tab-read"
+        >
           <div className="chapter-body">
             {error ? (
               `Failed to load: ${error}`
@@ -262,6 +280,7 @@ function App() {
             )}
           </div>
         </div>
+        )}
       </main>
       <SearchOverlay />
       <CopyToolbar />

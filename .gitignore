@@ -25,3 +25,7 @@ dist-ssr
 
  # Local tool state
 .freebuff/
+
+# Local-only binaries and reference images (never commit)
+opencode-desktop-win-x64.exe
+desktop-reference-image.jpg

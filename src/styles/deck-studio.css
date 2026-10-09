@@ -1,0 +1,492 @@
+/*
+ * DeckStudio — PowerPoint-like full-tab deck editor. Tokens only.
+ */
+
+.deck-studio {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  background: var(--background);
+}
+
+.deck-studio-top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-wrap: wrap;
+}
+
+.deck-studio-title-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.deck-studio-title {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-body-size);
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 40vw;
+}
+
+.deck-studio-count {
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-secondary);
+}
+
+.deck-studio-top-actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.deck-studio-top-actions .sermon-deck-present,
+.deck-studio-top-actions .sermon-deck-secondary {
+  flex: none;
+  min-width: 120px;
+}
+
+.deck-studio-empty {
+  margin: auto;
+  max-width: 520px;
+  padding: var(--space-12) var(--space-6);
+  text-align: center;
+  font-family: var(--font-ui);
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.deck-studio-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.deck-studio-body {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr) 340px;
+  gap: 0;
+  min-height: 0;
+  flex: 1;
+}
+
+.deck-studio-filmstrip {
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(100vh - 120px);
+}
+
+.deck-studio-list {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+}
+
+.deck-studio-thumb {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  text-align: left;
+  padding: var(--space-3);
+  padding-left: var(--space-2);
+  background: var(--background);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: grab;
+  font: inherit;
+  color: var(--text-primary);
+  user-select: none;
+  -webkit-user-select: none;
+  /* Pointer-drag reorder manages its own gesture: never let touch scroll
+     steal a drag that started on a card. */
+  touch-action: none;
+  position: relative;
+}
+
+.deck-studio-thumb:active {
+  cursor: grabbing;
+}
+
+.deck-studio-thumb:hover {
+  border-color: var(--accent);
+}
+
+.deck-studio-thumb-selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.deck-studio-thumb-dragging {
+  opacity: 0.45;
+}
+
+/* Grip handle: hidden until hover/focus/selected so cards stay clean. */
+.deck-studio-grip {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-1);
+  display: inline-flex;
+  color: var(--text-secondary);
+  opacity: 0;
+  transition: opacity var(--motion-fast) var(--ease-out);
+}
+
+.deck-studio-grip svg {
+  width: var(--space-4);
+  height: var(--space-4);
+}
+
+.deck-studio-thumb:hover .deck-studio-grip,
+.deck-studio-thumb:focus-visible .deck-studio-grip,
+.deck-studio-thumb-selected .deck-studio-grip {
+  opacity: 1;
+}
+
+/* Drop position indicator: accent line above/below the target card. */
+.deck-studio-thumb-wrap {
+  position: relative;
+}
+
+.deck-studio-drop-before::before,
+.deck-studio-drop-after::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  z-index: 1;
+}
+
+.deck-studio-drop-before::before {
+  top: -5px;
+}
+
+.deck-studio-drop-after::after {
+  bottom: -5px;
+}
+
+.deck-studio-drop-end {
+  height: 3px;
+  margin: var(--space-1) var(--space-2);
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+/* Undo bar: appears under the header after remove/clear/move/add. */
+.deck-studio-undo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-primary);
+}
+
+.deck-studio-undo-btn {
+  flex-shrink: 0;
+  padding: var(--space-1) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.deck-studio-undo-btn:hover {
+  background: var(--hover);
+}
+
+.deck-studio-undo-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+/* Background picker popover: floats over the studio, no layout shift. */
+.deck-studio-picker-pop {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: var(--space-4);
+  z-index: 60;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+  max-width: min(420px, calc(100vw - 2 * var(--space-4)));
+}
+
+/* Floating drag preview: a compact card that rides next to the cursor
+   for the whole gesture. pointer-events:none keeps drop hit-testing
+   exact — the ghost never covers a drop target. */
+.deck-studio-drag-ghost {
+  position: fixed;
+  z-index: 200;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-3);
+  opacity: 0.95;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.deck-studio-drag-ghost .deck-studio-thumb-preview {
+  -webkit-line-clamp: 2;
+}
+
+/* Quiet autosave status under the inspector actions. */
+.deck-studio-saved {
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-kbd-size);
+  color: var(--text-secondary);
+}
+
+/* Draft-mode canvas placeholder while the new slide is unsaved. */
+.deck-studio-canvas-draft {
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border-style: dashed;
+}
+
+.deck-studio-canvas-draft p {
+  margin: 0;
+  padding: var(--space-6);
+  font-family: var(--font-ui);
+  font-size: var(--text-body-size);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.deck-studio-thumb:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.deck-studio-thumb-num {
+  font-family: var(--font-ui);
+  font-size: var(--text-kbd-size);
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.deck-studio-thumb-ref {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.deck-studio-thumb-preview {
+  font-family: var(--font-reading);
+  font-size: var(--text-verse-number-size);
+  line-height: 1.6;
+  color: var(--text-primary);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.deck-studio-hint {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border);
+  font-family: var(--font-ui);
+  font-size: var(--text-kbd-size);
+  color: var(--text-secondary);
+}
+
+.deck-studio-canvas-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--space-4);
+  gap: var(--space-3);
+}
+
+.deck-studio-canvas-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.deck-studio-pos {
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.deck-studio-canvas {
+  flex: 1;
+  min-height: 320px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  display: flex;
+  box-shadow: var(--shadow-2);
+}
+
+.deck-studio-canvas .stage-slide {
+  flex: 1;
+}
+
+.deck-studio-inspector {
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  padding: var(--space-4);
+  overflow-y: auto;
+  min-height: 0;
+  max-height: calc(100vh - 120px);
+}
+
+.deck-studio-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.deck-studio-form-title {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-ui);
+  font-size: var(--text-body-size);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.deck-studio-verse-ref {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.deck-studio-verse-text {
+  margin: 0;
+  font-family: var(--font-reading);
+  font-size: var(--text-body-size);
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.deck-studio-row-actions {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+/* TopBar view tabs */
+.top-bar-view-tabs {
+  display: flex;
+  gap: var(--space-1);
+  padding: 2px;
+  background: var(--hover);
+  border-radius: var(--radius-md);
+}
+
+.top-bar-view-tab {
+  border: none;
+  background: none;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-size: var(--text-verse-number-size);
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.top-bar-view-tab[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: var(--shadow-1);
+}
+
+.top-bar-view-tab:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+@media (max-width: 1100px) {
+  .deck-studio-body {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+  .deck-studio-inspector {
+    grid-column: 1 / -1;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    max-height: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .deck-studio-body {
+    grid-template-columns: 1fr;
+  }
+  .deck-studio-filmstrip {
+    max-height: 240px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck-studio-thumb,
+  .deck-studio-canvas,
+  .deck-studio-grip {
+    transition: none;
+  }
+}

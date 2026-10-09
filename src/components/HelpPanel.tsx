@@ -36,6 +36,16 @@ const SECTIONS: { title: string; shortcuts: Shortcut[] }[] = [
     ],
   },
   {
+    title: "Deck studio tab",
+    shortcuts: [
+      { keys: ["Drag"], action: "Reorder slides" },
+      { keys: ["↑", "↓"], action: "Select previous / next slide" },
+      { keys: ["Ctrl", "↑", "↓"], action: "Move selected slide" },
+      { keys: ["Ctrl", "Enter"], action: "Save card or notes" },
+      { keys: ["Ctrl", "Z"], action: "Undo remove / clear / move" },
+    ],
+  },
+  {
     title: "Presenting",
     shortcuts: [
       { keys: ["→", "Space"], action: "Next slide" },

@@ -21,6 +21,10 @@ interface NavigationState {
   bookName: string;
   sidebarOpen: boolean;
   restored: boolean;
+  /** Top-level view: full reading pane or PowerPoint-like deck studio. */
+  activeView: "read" | "deck";
+  /** Switch between the reading pane and the deck studio. */
+  setView: (view: "read" | "deck") => void;
   /** Expand a book's chapter grid (or collapse it if already open). */
   openBook: (bookId: number) => void;
   /** Load a chapter into the reading pane (and expand it in the list). */
@@ -84,6 +88,8 @@ function persist(state: PersistedPosition): void {
 export const useNavigation = create<NavigationState>()((set) => ({
   ...load(),
   sidebarOpen: true,
+  activeView: "read",
+  setView: (activeView) => set({ activeView }),
   openBook: (bookId) =>
     set((s) => {
       const next = { openBookId: s.openBookId === bookId ? null : bookId };

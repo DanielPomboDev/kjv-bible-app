@@ -136,6 +136,38 @@ export function CopyIcon(props: IconProps) {
   );
 }
 
+/** Previous slide — chevron pointing left. */
+export function ChevronLeftIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="m15 18-6-6 6-6" />
+    </Svg>
+  );
+}
+
+/** Next slide — chevron pointing right. */
+export function ChevronRightIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="m9 18 6-6-6-6" />
+    </Svg>
+  );
+}
+
+/** Drag handle — six dots in two columns, for filmstrip reordering. */
+export function GripVerticalIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="9" cy="6" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="6" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="12" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="12" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="18" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="18" r="1.2" fill="currentColor" stroke="none" />
+    </Svg>
+  );
+}
+
 /** Settings reading-size stepper. */
 export function PlusIcon(props: IconProps) {
   return (
