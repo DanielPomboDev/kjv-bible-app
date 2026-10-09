@@ -296,33 +296,43 @@ export interface ExportResult {
   opened: boolean;
 }
 
+/** True inside the Tauri WebView (backend commands + opener exist). */
+function isTauriApp(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
+  );
+}
+
 /**
  * Export pipeline: render → save to Downloads via the backend → open
  * with the default app (PowerPoint). Outside Tauri (plain browser dev)
  * it falls back to an anchor download that the user opens by hand.
- * Never throws for delivery problems — reports them in the result.
+ * Backend/open failures throw with the reason so toasts stay honest.
  */
 export async function exportDeckPptx(sermon: Sermon): Promise<ExportResult> {
   const blob = await generateDeckPptx(sermon);
   const fileName = pptxFileName(sermon.title);
-  try {
-    const { invoke } = await import("@tauri-apps/api/core");
-    const base64Data = await blobToBase64(blob);
-    const path = (await invoke<string>("save_export", {
-      fileName,
-      base64Data,
-    })) as string;
-    try {
-      const { openPath } = await import("@tauri-apps/plugin-opener");
-      await openPath(path);
-      return { fileName, path, opened: true };
-    } catch {
-      return { fileName, path, opened: false };
-    }
-  } catch {
+  if (!isTauriApp()) {
     await downloadDeckPptx(sermon);
     return { fileName, path: fileName, opened: false };
   }
+  const { invoke } = await import("@tauri-apps/api/core");
+  const base64Data = await blobToBase64(blob);
+  const path = (await invoke<string>("save_export", {
+    fileName,
+    base64Data,
+  })) as string;
+  try {
+    const { openPath } = await import("@tauri-apps/plugin-opener");
+    await openPath(path);
+  } catch (e) {
+    // Saved but the OS wouldn't open it (no handler? denied?) — say
+    // so, with the path, instead of failing silently.
+    const reason = e instanceof Error ? e.message : String(e);
+    throw new Error(`saved to ${path}, but auto-open failed: ${reason}`);
+  }
+  return { fileName, path, opened: true };
 }
 
 /**
