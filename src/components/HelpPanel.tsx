@@ -35,7 +35,7 @@ const SECTIONS: { title: string; shortcuts: Shortcut[] }[] = [
       },
       {
         keys: ["Export .pptx"],
-        action: "Full deck once, then just new slides (one-way)",
+        action: "Download the deck for PowerPoint (one-way)",
       },
     ],
   },

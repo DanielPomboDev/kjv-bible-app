@@ -3,7 +3,6 @@ import {
   BACKGROUND_PRESETS,
 } from "../presentation/backgroundPresets";
 import {
-  appendFileName,
   exportToast,
   generateDeckPptx,
   pctToInX,
@@ -162,31 +161,15 @@ describe("pptx export mapping", () => {
     });
   });
 
-  test("toast lines cover full, append, and broken-record outcomes", () => {
-    const full = { kind: "full" as const, fileName: "s.pptx", path: "s.pptx", opened: true, recordBroken: false, count: 8 };
-    expect(exportToast(full, full.count)).toBe("Opened s.pptx in PowerPoint (8 slides)");
-    expect(exportToast({ ...full, opened: false, count: 1 }, 1)).toBe(
+  test("toast lines cover opened and saved outcomes", () => {
+    const full = { fileName: "s.pptx", path: "s.pptx", opened: true };
+    expect(exportToast(full, 8)).toBe("Opened s.pptx in PowerPoint (8 slides)");
+    expect(exportToast({ ...full, opened: false }, 1)).toBe(
       "Saved s.pptx — open it in PowerPoint (1 slide)",
     );
-    expect(exportToast({ ...full, recordBroken: true }, 8)).toBe(
-      "Deck changed — full re-export: Opened s.pptx in PowerPoint (8 slides)",
-    );
-    const append = {
-      kind: "append" as const,
-      fileName: "s-new-slides.pptx",
-      path: "s-new-slides.pptx",
-      opened: true,
-      recordBroken: false,
-      mainFileName: "s.pptx",
-      count: 2,
-    };
-    expect(exportToast(append, append.count)).toBe(
-      "Opened s-new-slides.pptx with 2 new — drag them into s.pptx",
-    );
-    expect(appendFileName("My Sermon")).toBe("my-sermon-new-slides.pptx");
   });
 
-  test("planItems maps an explicit subset for appends", () => {
+  test("planItems maps an explicit subset", () => {
     const sermon = sermonWith("Mix");
     sermon.deck = [
       { type: "verse", id: 1, label: "Genesis 1:1", text: "In the…" },
