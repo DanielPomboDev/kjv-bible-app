@@ -13,7 +13,12 @@ export function fitText(box: HTMLElement, text: HTMLElement): void {
   if (box.clientHeight === 0) return;
   const rootStyle = getComputedStyle(document.documentElement);
   const rootPx = parseFloat(rootStyle.fontSize) || 16;
-  const minToken = rootStyle.getPropertyValue("--stage-text-min-size").trim();
+  // Read the floor from the box (not :root) so a preview frame can
+  // override it per-subtree; plain inheritance yields the root value
+  // everywhere else, keeping the stage pixel-identical.
+  const minToken = getComputedStyle(box)
+    .getPropertyValue("--stage-text-min-size")
+    .trim();
   const minPx = minToken.endsWith("rem")
     ? parseFloat(minToken) * rootPx
     : parseFloat(minToken) || rootPx;

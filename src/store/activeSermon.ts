@@ -4,8 +4,15 @@ import type {
   OutlineSection,
   Sermon,
   SermonDeckItem,
+  SlideBlock,
 } from "../domain/types";
 import { deckKey } from "../domain/types";
+import {
+  customSlideToBlocks,
+  moveBlock as moveBlockOrder,
+  normalizeSlideBlock,
+  normalizeSlideBlocks,
+} from "../domain/blocks";
 import { loadLibraryState, isPresetId } from "./sermonStorage";
 import { useSermonLibrary } from "./sermonLibrary";
 import { syncPresentingDeck } from "../services/presentation";
@@ -63,6 +70,53 @@ interface ActiveSermonState {
     key: string,
     title: string | undefined,
     body: string,
+  ) => boolean;
+  /**
+   * Append a freeform block to a custom slide. False when the key isn't
+   * a custom slide. The block is normalized on write (geometry clamped,
+   * malformed rejected).
+   */
+  addBlock: (slideKey: string, block: SlideBlock) => boolean;
+  /**
+   * Patch one block in place (id/type immutable): the merged block is
+   * re-normalized, so garbage clamps and blank text/alt/src refuse
+   * (false, changing nothing).
+   */
+  updateBlock: (
+    slideKey: string,
+    blockId: string,
+    patch: Record<string, unknown>,
+  ) => boolean;
+  /** Remove one block (no-op false when missing). */
+  removeBlock: (slideKey: string, blockId: string) => boolean;
+  /**
+   * Move the block at one 0-based index to another (later paints on
+   * top). No-op when invalid.
+   */
+  moveBlockInSlide: (
+    slideKey: string,
+    fromIndex: number,
+    toIndex: number,
+  ) => boolean;
+  /**
+   * Replace a custom slide's blocks wholesale (templates, blank).
+   * Entries are normalized (malformed dropped); an empty result still
+   * applies as an empty freeform frame. False when not a custom slide.
+   */
+  setBlocks: (slideKey: string, blocks: SlideBlock[]) => boolean;
+  /**
+   * Convert a legacy title/body slide to freeform blocks (legacy fields
+   * stay as a fallback for older readers). False when already freeform,
+   * not custom, or nothing to convert.
+   */
+  convertToFreeform: (slideKey: string) => boolean;
+  /**
+   * Per-slide background override (`undefined` clears back to the
+   * sermon's background). Unknown preset ids are ignored.
+   */
+  setSlideBackground: (
+    slideKey: string,
+    presetId: string | undefined,
   ) => boolean;
   /** Remove one slide from the open sermon's deck (no-op if missing). */
   removeFromDeck: (key: string) => void;
@@ -123,6 +177,17 @@ function newDuplicateUid(): string {
   return `dup-${Date.now().toString(36)}-${Math.random()
     .toString(36)
     .slice(2, 8)}`;
+}
+
+/**
+ * Index of the custom slide with this deck key (-1 when missing or a
+ * verse slide — block ops only ever touch custom slides).
+ */
+function findCustomIndex(
+  deck: readonly SermonDeckItem[],
+  slideKey: string,
+): number {
+  return deck.findIndex((e) => e.type === "custom" && deckKey(e) === slideKey);
 }
 
 export const useActiveSermon = create<ActiveSermonState>()((set, get) => {
@@ -268,7 +333,130 @@ export const useActiveSermon = create<ActiveSermonState>()((set, get) => {
         // title/body edit — keep them.
         ...(previous.notes !== undefined ? { notes: previous.notes } : {}),
         ...(previous.uid !== undefined ? { uid: previous.uid } : {}),
+        // Freeform content survives legacy edits (the popover editor can
+        // touch any custom slide — it must never wipe blocks).
+        ...(previous.blocks !== undefined ? { blocks: previous.blocks } : {}),
+        ...(previous.backgroundPresetId !== undefined
+          ? { backgroundPresetId: previous.backgroundPresetId }
+          : {}),
       };
+      commit({ ...sermon, deck });
+      return true;
+    },
+
+    addBlock: (slideKey, block) => {
+      const normalized = normalizeSlideBlock(block);
+      if (normalized === null) return false;
+      const { sermon } = get();
+      const index = findCustomIndex(sermon.deck, slideKey);
+      if (index === -1) return false;
+      const deck = [...sermon.deck];
+      const previous = deck[index];
+      if (previous.type !== "custom") return false;
+      const blocks = [...(previous.blocks ?? []), normalized];
+      deck[index] = { ...previous, blocks };
+      commit({ ...sermon, deck });
+      return true;
+    },
+
+    updateBlock: (slideKey, blockId, patch) => {
+      const { sermon } = get();
+      const index = findCustomIndex(sermon.deck, slideKey);
+      if (index === -1) return false;
+      const current = sermon.deck[index];
+      if (current.type !== "custom") return false;
+      const blocks = current.blocks ?? [];
+      const blockIndex = blocks.findIndex((b) => b.id === blockId);
+      if (blockIndex === -1) return false;
+      // Merge then re-normalize: garbage clamps, blank text/alt refuses.
+      // id/type are immutable — a patch claiming otherwise is dropped.
+      const { id: _id, type: _type, ...rest } = patch;
+      void _id;
+      void _type;
+      const merged = normalizeSlideBlock({ ...blocks[blockIndex], ...rest });
+      if (merged === null) return false;
+      const nextBlocks = [...blocks];
+      nextBlocks[blockIndex] = merged;
+      const deck = [...sermon.deck];
+      deck[index] = { ...current, blocks: nextBlocks };
+      commit({ ...sermon, deck });
+      return true;
+    },
+
+    removeBlock: (slideKey, blockId) => {
+      const { sermon } = get();
+      const index = findCustomIndex(sermon.deck, slideKey);
+      if (index === -1) return false;
+      const current = sermon.deck[index];
+      if (current.type !== "custom") return false;
+      const blocks = (current.blocks ?? []).filter((b) => b.id !== blockId);
+      if (blocks.length === (current.blocks ?? []).length) return false;
+      const deck = [...sermon.deck];
+      deck[index] = { ...current, blocks };
+      commit({ ...sermon, deck });
+      return true;
+    },
+
+    moveBlockInSlide: (slideKey, fromIndex, toIndex) => {
+      const { sermon } = get();
+      const index = findCustomIndex(sermon.deck, slideKey);
+      if (index === -1) return false;
+      const current = sermon.deck[index];
+      if (current.type !== "custom") return false;
+      const blocks = current.blocks ?? [];
+      const moved = moveBlockOrder(blocks, fromIndex, toIndex);
+      if (moved.every((b, i) => b === blocks[i])) return false;
+      const deck = [...sermon.deck];
+      deck[index] = { ...current, blocks: moved };
+      commit({ ...sermon, deck });
+      return true;
+    },
+
+    setBlocks: (slideKey, blocks) => {
+      const { sermon } = get();
+      const index = findCustomIndex(sermon.deck, slideKey);
+      if (index === -1) return false;
+      const current = sermon.deck[index];
+      if (current.type !== "custom") return false;
+      const normalized = normalizeSlideBlocks(blocks);
+      const deck = [...sermon.deck];
+      deck[index] = { ...current, blocks: normalized };
+      commit({ ...sermon, deck });
+      return true;
+    },
+
+    convertToFreeform: (slideKey) => {
+      const { sermon } = get();
+      const index = findCustomIndex(sermon.deck, slideKey);
+      if (index === -1) return false;
+      const current = sermon.deck[index];
+      if (current.type !== "custom") return false;
+      if ((current.blocks ?? []).length > 0) return false;
+      const blocks = customSlideToBlocks(current.title, current.body);
+      if (blocks.length === 0) return false;
+      const deck = [...sermon.deck];
+      // Legacy title/body stay as a fallback for older readers.
+      deck[index] = { ...current, blocks };
+      commit({ ...sermon, deck });
+      return true;
+    },
+
+    setSlideBackground: (slideKey, presetId) => {
+      if (presetId !== undefined && !isPresetId(presetId)) return false;
+      const { sermon } = get();
+      const index = findCustomIndex(sermon.deck, slideKey);
+      if (index === -1) return false;
+      const current = sermon.deck[index];
+      if (current.type !== "custom") return false;
+      if (current.backgroundPresetId === presetId) return false;
+      const deck = [...sermon.deck];
+      deck[index] =
+        presetId === undefined
+          ? ((): SermonDeckItem => {
+              const { backgroundPresetId: _dropped, ...rest } = current;
+              return rest as SermonDeckItem;
+            })()
+          : { ...current, backgroundPresetId: presetId };
       commit({ ...sermon, deck });
       return true;
     },

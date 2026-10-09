@@ -77,6 +77,18 @@ export interface CustomSlideItem {
   /** Required body text. */
   body: string;
   /**
+   * Freeform PowerPoint-style blocks. When present and non-empty the
+   * slide renders blocks instead of title/body (legacy fields stay as a
+   * fallback for older readers — never cleared by conversion).
+   */
+  blocks?: SlideBlock[];
+  /**
+   * Per-slide background preset override; absent means the sermon's
+   * `backgroundPresetId`. Resolved with `getBackgroundPreset` like the
+   * sermon-level value.
+   */
+  backgroundPresetId?: string;
+  /**
    * Per-entry identity, present only on duplicates (see VerseSlideItem).
    * Fresh custom slides use their unique `id` and carry no `uid`.
    */
@@ -87,6 +99,71 @@ export interface CustomSlideItem {
    */
   notes?: string;
 }
+
+/**
+ * Horizontal alignment of a freeform text box.
+ */
+export type SlideBlockAlign = "left" | "center" | "right";
+
+/**
+ * One freeform text box on a custom slide: positioned in percent of the
+ * slide frame (resolution-independent, so preview and stage agree), with
+ * a uniform style for the whole box (Phase 1 — per-word spans arrive in
+ * Phase 2). Font size is percent of slide *width*, rendered with
+ * container-query units.
+ */
+export interface TextSlideBlock {
+  type: "text";
+  /** Stable id (`block-…`), unique within the slide. Never reused. */
+  id: string;
+  /** Left/top/width in percent of the slide frame (0–100). Height is
+   * intrinsic (text boxes grow, images keep aspect). */
+  x: number;
+  y: number;
+  w: number;
+  align: SlideBlockAlign;
+  /** Font registry id (see presentation/slideFonts.ts) — unknown ids
+   * fall back to the default serif at render. */
+  font: string;
+  /** Font size in percent of slide width (1–12). */
+  sizePct: number;
+  /** Hex text color; absent means the background preset's text color. */
+  color?: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  /** Plain text content (newlines preserved). */
+  text: string;
+}
+
+/**
+ * One freeform image on a custom slide. Phase 1 stores dataURLs
+ * (downscaled on import); a Tauri fs store may replace this in Phase 2.
+ * `alt` is required — every image needs a label for screen readers.
+ */
+export interface ImageSlideBlock {
+  type: "image";
+  /** Stable id (`block-…`), unique within the slide. Never reused. */
+  id: string;
+  /** Left/top/width in percent of the slide frame (0–100). Height
+   * follows the image aspect. */
+  x: number;
+  y: number;
+  w: number;
+  /** Image source: `data:image/…`, `https?://`, `blob:`, or `asset://`. */
+  src: string;
+  /** Required alt text. */
+  alt: string;
+  /** How the image fills its box; defaults to `contain` (never crop
+   * by surprise). */
+  fit?: "cover" | "contain";
+}
+
+/**
+ * One freeform element on a custom slide. Array order is paint order
+ * (later paints on top) — layer moves are array moves, no z-index state.
+ */
+export type SlideBlock = TextSlideBlock | ImageSlideBlock;
 
 /**
  * One item in the sermon deck: either a verse slide or a custom slide.

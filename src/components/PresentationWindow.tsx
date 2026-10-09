@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { StageSlide } from "../domain/types";
+import { renderMode } from "../domain/blocks";
 import {
   DEFAULT_BACKGROUND_PRESET_ID,
   getBackgroundPreset,
@@ -7,6 +8,7 @@ import {
 import { useStage, useStageKeys } from "../presentation/useStage";
 import { SlideView } from "./SlideView";
 import { CustomSlideView } from "./CustomSlideView";
+import { BlockSlideView } from "./BlockSlideView";
 
 /**
  * The presentation stage: a borderless fullscreen window, separate from the main app, showing one slide at a
@@ -37,15 +39,20 @@ export function PresentationWindow() {
 
   const current: StageSlide | null = stage?.deck[stage.index] ?? null;
 
+  // Per-slide background override (freeform slides) falls back to the
+  // sermon-level snapshot, like the Deck canvas resolves it.
+  const preset = getBackgroundPreset(
+    (current?.type === "custom"
+      ? (current.backgroundPresetId ?? stage?.background)
+      : stage?.background) ?? DEFAULT_BACKGROUND_PRESET_ID,
+  );
+
   // The preset owns the whole slide look: its background replaces the
   // fixed stage background, its text/reference colors override the stage
-  // tokens (inherited by SlideView), so every preset stays readable —
-  // including the light parchment one with its dark text. Before the
+  // tokens (inherited by the slide views), so every preset stays readable
+  // — including the light parchment one with its dark text. Before the
   // first stage state arrives, Classic Black shows (same fallback
   // `getBackgroundPreset` uses for unknown ids).
-  const preset = getBackgroundPreset(
-    stage?.background ?? DEFAULT_BACKGROUND_PRESET_ID,
-  );
   const stageStyle = {
     background: preset.background,
     "--stage-text": preset.textColor,
@@ -53,14 +60,20 @@ export function PresentationWindow() {
   } as CSSProperties;
 
   // No buttons or toolbar on the slide itself — click anywhere advances,
-  // same as →/Space (and closes past the last slide). Verse and custom
-  // slides render through their own views but share the stage, the
-  // preset, and every navigation path, so a mixed deck steps through in
-  // order with identical keys.
+  // same as →/Space (and closes past the last slide). Verse, legacy
+  // custom, and freeform slides render through their own views but share
+  // the stage, the preset, and every navigation path, so a mixed deck
+  // steps through in order with identical keys.
   return (
     <div className="stage" onClick={advance} style={stageStyle}>
       {current?.type === "custom" ? (
-        <CustomSlideView slide={current} />
+        renderMode(current) === "blocks" ? (
+          <BlockSlideView
+            slide={{ id: current.id, blocks: current.blocks ?? [] }}
+          />
+        ) : (
+          <CustomSlideView slide={current} />
+        )
       ) : (
         <SlideView slide={current?.type === "verse" ? current : null} />
       )}

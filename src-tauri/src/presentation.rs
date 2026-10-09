@@ -11,8 +11,16 @@ use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 /// Private presenter `notes` (when present) travel along untouched but
 /// are never rendered by the stage — the audience window shows only the
 /// slide content.
+///
+/// Freeform PowerPoint-style editing adds two OPTIONAL custom fields —
+/// `blocks` (positioned text/image boxes, see `SlideBlock` in
+/// `src/domain/types.ts`) and `backgroundPresetId` (per-slide background
+/// override). Both default when absent, so old decks load unchanged, and
+/// unknown future fields are ignored by serde: the backend holds and
+/// re-emits slides, it never interprets them, so rendering always stays
+/// a frontend concern.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(tag = "type", rename_all = "camelCase")]
 pub enum Slide {
     /// A Bible verse slide: `id` is the canonical verse id
     /// (`verses.id`) and `label` the ready-made reference ("John 3:16").
@@ -26,7 +34,7 @@ pub enum Slide {
     },
     /// A custom sermon slide: string `id` in its own namespace (never collides with verse ids), optional
     /// `title`, required `body`.
-    #[serde(rename = "custom")]
+    #[serde(rename = "custom", rename_all = "camelCase")]
     Custom {
         id: String,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -34,6 +42,71 @@ pub enum Slide {
         body: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         notes: Option<String>,
+        /// Freeform blocks; `None`/empty means the legacy title/body
+        /// rendering. Liberal on input (every field defaulted) because
+        /// the frontend owns validation — see `normalizeSlideBlock`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        blocks: Option<Vec<Block>>,
+        /// Per-slide background preset override; absent means the
+        /// sermon's background. Unknown ids fall back stage-side.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        background_preset_id: Option<String>,
+    },
+}
+
+/// One freeform element on a custom slide. Mirrors `SlideBlock` in
+/// `src/domain/types.ts` — held and re-emitted untouched, never
+/// interpreted here. Every field is defaulted so older payloads (no
+/// blocks at all) and sparse payloads load; additive evolution means
+/// adding new variants here in lockstep with the frontend.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub enum Block {
+    /// Positioned text box: geometry in percent of slide, size in
+    /// percent of slide width, style flags, plain text.
+    #[serde(rename = "text", rename_all = "camelCase")]
+    Text {
+        id: String,
+        #[serde(default)]
+        x: f64,
+        #[serde(default)]
+        y: f64,
+        #[serde(default)]
+        w: f64,
+        #[serde(default)]
+        align: String,
+        #[serde(default)]
+        font: String,
+        #[serde(default)]
+        size_pct: f64,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        color: Option<String>,
+        #[serde(default)]
+        bold: bool,
+        #[serde(default)]
+        italic: bool,
+        #[serde(default)]
+        underline: bool,
+        #[serde(default)]
+        text: String,
+    },
+    /// Positioned image: dataURL/http(s)/blob/asset source with required
+    /// alt text (the frontend enforces both).
+    #[serde(rename = "image", rename_all = "camelCase")]
+    Image {
+        id: String,
+        #[serde(default)]
+        x: f64,
+        #[serde(default)]
+        y: f64,
+        #[serde(default)]
+        w: f64,
+        #[serde(default)]
+        src: String,
+        #[serde(default)]
+        alt: String,
+        #[serde(default)]
+        fit: String,
     },
 }
 
@@ -668,6 +741,8 @@ mod tests {
             title: title.map(str::to_string),
             body: body.into(),
             notes: None,
+            blocks: None,
+            background_preset_id: None,
         }
     }
 
@@ -706,6 +781,86 @@ mod tests {
         let back: Slide = serde_json::from_str(&json).expect("deserialize");
         match back {
             Slide::Custom { title, .. } => assert_eq!(title, None),
+            Slide::Verse { .. } => panic!("expected custom slide"),
+        }
+    }
+
+    #[test]
+    fn freeform_blocks_and_background_survive_the_boundary() {
+        // What the frontend sends for an edited slide: legacy body stays
+        // (fallback for older readers) with blocks + background override.
+        let json = r#"{"type":"custom","id":"custom-f1","body":"Grace","blocks":[{"type":"text","id":"block-1","x":10.0,"y":8.0,"w":80.0,"align":"center","font":"serif","sizePct":4.5,"bold":true,"text":"Grace"},{"type":"image","id":"block-2","x":10.0,"y":40.0,"w":80.0,"src":"data:image/png;base64,AAA","alt":"Church logo","fit":"contain"}],"backgroundPresetId":"deep-navy"}"#;
+        let back: Slide = serde_json::from_str(json).expect("deserialize");
+        match &back {
+            Slide::Custom {
+                blocks,
+                background_preset_id,
+                body,
+                ..
+            } => {
+                assert_eq!(body, "Grace");
+                let blocks = blocks.as_ref().expect("blocks present");
+                assert_eq!(blocks.len(), 2);
+                assert_eq!(
+                    blocks[0],
+                    Block::Text {
+                        id: "block-1".into(),
+                        x: 10.0,
+                        y: 8.0,
+                        w: 80.0,
+                        align: "center".into(),
+                        font: "serif".into(),
+                        size_pct: 4.5,
+                        color: None,
+                        bold: true,
+                        italic: false,
+                        underline: false,
+                        text: "Grace".into(),
+                    }
+                );
+                assert!(matches!(blocks[1], Block::Image { .. }));
+                assert_eq!(
+                    background_preset_id.as_deref(),
+                    Some("deep-navy")
+                );
+            }
+            Slide::Verse { .. } => panic!("expected custom slide"),
+        }
+        // …and the round trip re-emits everything the stage needs.
+        let out = serde_json::to_string(&back).expect("serialize");
+        assert!(out.contains(r#""backgroundPresetId":"deep-navy""#));
+        assert!(out.contains(r#""type":"text""#));
+    }
+
+    #[test]
+    fn sparse_blocks_default_gracefully() {
+        // A hand-written minimal block: every field defaults, the slide
+        // still loads — the backend never interprets blocks.
+        let back: Slide = serde_json::from_str(
+            r#"{"type":"custom","id":"c","body":"x","blocks":[{"type":"text","id":"b"}]}"#,
+        )
+        .expect("deserialize");
+        match back {
+            Slide::Custom { blocks, .. } => {
+                let blocks = blocks.expect("blocks present");
+                assert_eq!(
+                    blocks[0],
+                    Block::Text {
+                        id: "b".into(),
+                        x: 0.0,
+                        y: 0.0,
+                        w: 0.0,
+                        align: "".into(),
+                        font: "".into(),
+                        size_pct: 0.0,
+                        color: None,
+                        bold: false,
+                        italic: false,
+                        underline: false,
+                        text: "".into(),
+                    }
+                );
+            }
             Slide::Verse { .. } => panic!("expected custom slide"),
         }
     }

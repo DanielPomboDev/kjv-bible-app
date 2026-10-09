@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import type { StageSlide } from "../domain/types";
+import { freeformPreviewText } from "../domain/blocks";
 import {
   DEFAULT_BACKGROUND_PRESET_ID,
   getBackgroundPreset,
@@ -47,15 +48,27 @@ function SlidePreview({
     color: preset.textColor,
   } as CSSProperties;
   const refStyle = { color: preset.referenceColor } as CSSProperties;
+  // Freeform slides show their text boxes' words (legacy title/body stay
+  // as the fallback for unconverted slides).
+  const freeformText =
+    slide.type === "custom" &&
+    slide.blocks !== undefined &&
+    slide.blocks.length > 0
+      ? freeformPreviewText(slide.blocks)
+      : null;
   return (
     <div className={`presenter-slide presenter-slide-${size}`} style={style}>
       {slide.type === "custom" ? (
-        <>
-          {slide.title && (
-            <div className="presenter-slide-title">{slide.title}</div>
-          )}
-          <div className="presenter-slide-body">{slide.body}</div>
-        </>
+        freeformText !== null ? (
+          <div className="presenter-slide-body">{freeformText}</div>
+        ) : (
+          <>
+            {slide.title && (
+              <div className="presenter-slide-title">{slide.title}</div>
+            )}
+            <div className="presenter-slide-body">{slide.body}</div>
+          </>
+        )
       ) : (
         <>
           <div className="presenter-slide-body">{slide.text}</div>
@@ -92,9 +105,14 @@ export function PresenterWindow() {
       : null;
   const total = stage?.deck.length ?? 0;
   const position = stage ? stage.index + 1 : 0;
-  const preset = getBackgroundPreset(
-    stage?.background ?? DEFAULT_BACKGROUND_PRESET_ID,
-  );
+  // Per-slide background overrides resolve like the stage does, so the
+  // thumbnails match the audience screen even for custom backgrounds.
+  const presetFor = (slide: StageSlide | null) =>
+    getBackgroundPreset(
+      (slide?.type === "custom"
+        ? (slide.backgroundPresetId ?? stage?.background)
+        : stage?.background) ?? DEFAULT_BACKGROUND_PRESET_ID,
+    );
 
   // Match the main app's light/dark theme: the presenter window loaded
   // once (pre-warmed hidden at startup), so startup `initSettings` alone
@@ -143,7 +161,7 @@ export function PresenterWindow() {
         <div className="presenter-grid">
           <section className="presenter-panel" aria-label="Current slide">
             <h2 className="presenter-heading">Now</h2>
-            <SlidePreview slide={current} preset={preset} size="now" />
+            <SlidePreview slide={current} preset={presetFor(current)} size="now" />
             <h3 className="presenter-subheading">Notes</h3>
             {current.notes ? (
               <p className="presenter-notes">{current.notes}</p>
@@ -156,7 +174,7 @@ export function PresenterWindow() {
             <section className="presenter-panel" aria-label="Next slide">
               <h2 className="presenter-heading">Next</h2>
               {next ? (
-                <SlidePreview slide={next} preset={preset} size="next" />
+                <SlidePreview slide={next} preset={presetFor(next)} size="next" />
               ) : (
                 <p className="presenter-muted">End of deck.</p>
               )}

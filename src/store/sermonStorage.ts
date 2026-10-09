@@ -5,6 +5,7 @@ import type {
   SermonDeckItem,
   VerseSlideItem,
 } from "../domain/types";
+import { normalizeSlideBlocks } from "../domain/blocks";
 import {
   BACKGROUND_PRESETS,
   DEFAULT_BACKGROUND_PRESET_ID,
@@ -86,14 +87,27 @@ function normalizeUid(value: unknown): string | undefined {
  * Legacy verse entries (no `type` field) become `{ type: "verse", … }`
  * so old decks survive the union migration unchanged. Presenter notes
  * (when present) travel on whichever slide type carries them, and
- * duplicate identities survive the round trip the same way.
+ * duplicate identities survive the round trip the same way. Freeform
+ * `blocks` and per-slide `backgroundPresetId` pass through normalized
+ * (malformed entries dropped) so new slides survive restarts and
+ * backup export/import.
  */
-function normalizeDeckItem(value: unknown): SermonDeckItem | null {
+export function normalizeDeckItem(value: unknown): SermonDeckItem | null {
   if (isCustomItem(value)) {
     const { id, title, body } = value;
     const record = value as unknown as Record<string, unknown>;
     const notes = normalizeNotes(record.notes);
     const uid = normalizeUid(record.uid);
+    const rawBlocks = record.blocks;
+    const blocks = normalizeSlideBlocks(rawBlocks);
+    // An explicit empty list is a blank freeform frame (kept); a list
+    // whose every entry failed validation falls back to legacy (dropped)
+    // so corrupt data still shows the slide's body text.
+    const keepBlocks =
+      blocks.length > 0 || (Array.isArray(rawBlocks) && rawBlocks.length === 0);
+    const backgroundPresetId = isPresetId(record.backgroundPresetId)
+      ? (record.backgroundPresetId as string)
+      : undefined;
     return {
       type: "custom",
       id,
@@ -101,6 +115,8 @@ function normalizeDeckItem(value: unknown): SermonDeckItem | null {
       body,
       ...(notes === undefined ? {} : { notes }),
       ...(uid === undefined ? {} : { uid }),
+      ...(keepBlocks ? { blocks } : {}),
+      ...(backgroundPresetId === undefined ? {} : { backgroundPresetId }),
     };
   }
   if (isVerseItem(value)) {

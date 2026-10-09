@@ -83,3 +83,118 @@ describe("active sermon deck (Deck Studio contract)", () => {
     expect(useActiveSermon.getState().sermon.deck).toHaveLength(0);
   });
 });
+
+describe("freeform blocks (PowerPoint editing contract)", () => {
+  beforeEach(() => {
+    stubStorage();
+    useActiveSermon.getState().replaceSermon(freshSermon("Test"));
+  });
+
+  function addLegacy(): string {
+    const item = useActiveSermon.getState().addCustomSlide("T", "body")!;
+    return deckKey(item);
+  }
+
+  test("converts legacy title/body to blocks, keeping the fallback", () => {
+    const key = addLegacy();
+    expect(useActiveSermon.getState().convertToFreeform(key)).toBe(true);
+    const slide = useActiveSermon.getState().sermon.deck[0];
+    expect(slide.type).toBe("custom");
+    if (slide.type !== "custom") return;
+    expect(slide.blocks).toHaveLength(2);
+    // Legacy fields stay for older readers.
+    expect(slide.title).toBe("T");
+    expect(slide.body).toBe("body");
+    // Converting twice is a no-op.
+    expect(useActiveSermon.getState().convertToFreeform(key)).toBe(false);
+  });
+
+  test("adds, patches, layers, and removes blocks", () => {
+    const key = addLegacy();
+    const s = useActiveSermon.getState();
+    expect(s.convertToFreeform(key)).toBe(true);
+
+    expect(
+      s.addBlock(key, {
+        type: "text",
+        id: "block extra",
+        x: 0,
+        y: 60,
+        w: 200,
+        align: "left",
+        font: "sans",
+        sizePct: 2,
+        text: "Extra",
+      }),
+    ).toBe(true);
+    let slide = useActiveSermon.getState().sermon.deck[0];
+    if (slide.type !== "custom" || !slide.blocks) throw new Error("setup");
+    expect(slide.blocks).toHaveLength(3);
+    // Geometry clamped on write.
+    expect(slide.blocks[2].x).toBe(0);
+    expect(slide.blocks[2].w).toBe(100);
+
+    const extraId = slide.blocks[2].id;
+    expect(s.updateBlock(key, extraId, { x: 20, sizePct: 99 })).toBe(true);
+    slide = useActiveSermon.getState().sermon.deck[0];
+    if (slide.type !== "custom" || !slide.blocks) throw new Error("setup");
+    expect(slide.blocks[2].x).toBe(20);
+    expect(
+      slide.blocks[2].type === "text" && slide.blocks[2].sizePct,
+    ).toBe(12);
+
+    // Blank text refuses, changing nothing.
+    expect(s.updateBlock(key, extraId, { text: "   " })).toBe(false);
+
+    // Layer order: last paints on top.
+    expect(s.moveBlockInSlide(key, 2, 0)).toBe(true);
+    slide = useActiveSermon.getState().sermon.deck[0];
+    if (slide.type !== "custom" || !slide.blocks) throw new Error("setup");
+    expect(slide.blocks[0].id).toBe(extraId);
+
+    expect(s.removeBlock(key, extraId)).toBe(true);
+    slide = useActiveSermon.getState().sermon.deck[0];
+    if (slide.type !== "custom") throw new Error("setup");
+    expect(slide.blocks).toHaveLength(2);
+    expect(s.removeBlock(key, "missing")).toBe(false);
+  });
+
+  test("verse slides reject every block op", () => {
+    const s = useActiveSermon.getState();
+    s.addToDeck({ type: "verse", id: 7, label: "John 3:16", text: "x" });
+    const key = deckKey(useActiveSermon.getState().sermon.deck[0]);
+    const block = {
+      type: "text" as const,
+      id: "b",
+      x: 0,
+      y: 0,
+      w: 10,
+      align: "left" as const,
+      font: "serif",
+      sizePct: 3,
+      text: "x",
+    };
+    expect(s.addBlock(key, block)).toBe(false);
+    expect(s.updateBlock(key, "b", { x: 1 })).toBe(false);
+    expect(s.removeBlock(key, "b")).toBe(false);
+    expect(s.moveBlockInSlide(key, 0, 1)).toBe(false);
+    expect(s.setBlocks(key, [block])).toBe(false);
+    expect(s.convertToFreeform(key)).toBe(false);
+    expect(s.setSlideBackground(key, "deep-navy")).toBe(false);
+  });
+
+  test("per-slide background sets, clears, and rejects unknown presets", () => {
+    const key = addLegacy();
+    const s = useActiveSermon.getState();
+    expect(s.setSlideBackground(key, "deep-navy")).toBe(true);
+    let slide = useActiveSermon.getState().sermon.deck[0];
+    if (slide.type !== "custom") throw new Error("setup");
+    expect(slide.backgroundPresetId).toBe("deep-navy");
+    expect(s.setSlideBackground(key, "deep-navy")).toBe(false);
+    expect(s.setSlideBackground(key, "nope")).toBe(false);
+    expect(s.setSlideBackground(key, undefined)).toBe(true);
+    slide = useActiveSermon.getState().sermon.deck[0];
+    if (slide.type !== "custom") throw new Error("setup");
+    expect(slide.backgroundPresetId).toBeUndefined();
+  });
+});

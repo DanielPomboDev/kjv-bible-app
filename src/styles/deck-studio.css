@@ -368,8 +368,18 @@
 }
 
 .deck-studio-canvas {
-  flex: 1;
-  min-height: 320px;
+  /* Measured 16:9 letterbox (see stageWrap hook): the audience stage is
+     fullscreen, so matching its aspect is what makes wrapping and
+     auto-fit converge. Pre-measure fallback is full-width 16:9. */
+  position: relative;
+  flex: none;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 100%;
+  box-sizing: border-box;
+  /* Stage padding parity (scaled per-subtree via --stage-padding): the
+     preview frame insets content exactly like the fullscreen stage. */
+  padding: var(--stage-padding);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   overflow: hidden;
@@ -377,8 +387,15 @@
   box-shadow: var(--shadow-2);
 }
 
-.deck-studio-canvas .stage-slide {
+/* Centers the letterboxed canvas in leftover space (dark backdrop
+   around it, like PowerPoint's slide sorter canvas). */
+.deck-studio-stage-fit {
   flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .deck-studio-inspector {

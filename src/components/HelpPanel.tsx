@@ -46,6 +46,18 @@ const SECTIONS: { title: string; shortcuts: Shortcut[] }[] = [
     ],
   },
   {
+    title: "Freeform slides",
+    shortcuts: [
+      { keys: ["Double-click"], action: "Edit a text box" },
+      { keys: ["Drag"], action: "Move the selected box" },
+      { keys: ["↑", "↓", "←", "→"], action: "Nudge box (Shift: bigger)" },
+      { keys: ["Enter"], action: "Edit selected text box" },
+      { keys: ["Del"], action: "Delete selected box" },
+      { keys: ["Esc"], action: "Stop editing / deselect" },
+      { keys: ["Ctrl", "V"], action: "Paste an image from clipboard" },
+    ],
+  },
+  {
     title: "Presenting",
     shortcuts: [
       { keys: ["→", "Space"], action: "Next slide" },

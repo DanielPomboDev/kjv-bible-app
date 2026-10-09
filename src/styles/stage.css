@@ -126,6 +126,28 @@
   color: var(--stage-dim);
 }
 
+/* Freeform blocks (see BlockSlideView): the frame is the container for
+   cqw font sizing, so one JSON shape renders identically on the
+   fullscreen stage and the small preview. Children are absolutely
+   positioned in percent of frame; later DOM order paints on top. */
+.stage-slide-blocks {
+  position: relative;
+  container-type: inline-size;
+}
+
+.stage-block-text {
+  position: absolute;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+}
+
+.stage-block-image {
+  position: absolute;
+  height: auto;
+  user-select: none;
+}
+
 /* Honor prefers-reduced-motion: nothing animates today; declared so any
    future slide transition degrades to instant too. */
 @media (prefers-reduced-motion: reduce) {

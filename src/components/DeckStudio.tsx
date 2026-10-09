@@ -19,6 +19,9 @@ import { getBackgroundPreset } from "../presentation/backgroundPresets";
 import { BackgroundPicker } from "../presentation/BackgroundPicker";
 import { SlideView } from "./SlideView";
 import { CustomSlideView } from "./CustomSlideView";
+import { BlockSlideView } from "./BlockSlideView";
+import { BlockEditorCanvas } from "./BlockEditorCanvas";
+import { FreeformInspector } from "./FreeformInspector";
 import { useToast } from "../store/toast";
 import {
   ChevronLeftIcon,
@@ -28,6 +31,16 @@ import {
   GripVerticalIcon,
 } from "./icons";
 import { insertionIndex } from "../domain/deckOrder";
+import {
+  STAGE_1080P_PX,
+  previewScaleForWidth,
+} from "../presentation/stageScale";
+import { newBlockId, renderMode } from "../domain/blocks";
+import {
+  clipboardToSlideImage,
+  fileToSlideImage,
+  fitsImageBudget,
+} from "../presentation/images";
 
 /** One-level undo for destructive deck ops (remove / clear / move / add). */
 interface DeckUndo {
@@ -59,6 +72,8 @@ export function DeckStudio() {
   const duplicateDeckItem = useActiveSermon((s) => s.duplicateDeckItem);
   const moveInDeck = useActiveSermon((s) => s.moveInDeck);
   const clearDeck = useActiveSermon((s) => s.clearDeck);
+  const addBlock = useActiveSermon((s) => s.addBlock);
+  const convertToFreeform = useActiveSermon((s) => s.convertToFreeform);
   const setView = useNavigation((s) => s.setView);
   const showToast = useToast((s) => s.showToast);
 
@@ -75,6 +90,9 @@ export function DeckStudio() {
     null,
   );
   const [undo, setUndo] = useState<DeckUndo | null>(null);
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [overflowIds, setOverflowIds] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const filmstripRef = useRef<HTMLOListElement>(null);
   const bgButtonRef = useRef<HTMLButtonElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
@@ -96,6 +114,25 @@ export function DeckStudio() {
     [deck, selectedKey],
   );
   const selected = selectedIndex >= 0 ? deck[selectedIndex] : null;
+  const selectedCustom =
+    selected !== null && selected.type === "custom" ? selected : null;
+  const isFreeform =
+    selectedCustom !== null && renderMode(selectedCustom) === "blocks";
+
+  // Block selection follows the slide: cleared on switch, dropped when
+  // its block disappears (delete/undo/template).
+  useEffect(() => {
+    setSelectedBlockId(null);
+    setOverflowIds([]);
+  }, [selectedKey]);
+  useEffect(() => {
+    if (selectedBlockId === null) return;
+    const blocks =
+      selectedCustom !== null ? (selectedCustom.blocks ?? []) : [];
+    if (!blocks.some((b) => b.id === selectedBlockId)) {
+      setSelectedBlockId(null);
+    }
+  }, [deck, selectedCustom, selectedBlockId]);
   const draggedItem =
     dragKey !== null && dragPos !== null
       ? (deck.find((e) => deckKey(e) === dragKey) ?? null)
@@ -109,6 +146,43 @@ export function DeckStudio() {
       ?.querySelector(`[data-slide="${CSS.escape(selectedKey)}"]`)
       ?.scrollIntoView({ block: "nearest" });
   }, [selectedKey]);
+
+  // Letterboxed 16:9 stage frame: the audience stage is fullscreen
+  // (usually 16:9), so the preview's wrapping and auto-fit only match it
+  // when they share the aspect. Measured with ResizeObserver — never
+  // magic numbers. SlideView's own observer refits text after each tick.
+  // Callback-ref element (not a static ref): the frame remounts between
+  // the draft placeholder and the live preview, and observation must
+  // follow whichever is mounted.
+  const [stageWrapEl, setStageWrapEl] = useState<HTMLDivElement | null>(
+    null,
+  );
+  const [stageBox, setStageBox] = useState<{ w: number; h: number } | null>(
+    null,
+  );
+  useEffect(() => {
+    if (!stageWrapEl) return;
+    const update = () => {
+      const r = stageWrapEl.getBoundingClientRect();
+      let w = Math.max(0, r.width);
+      let h = (w * 9) / 16;
+      if (h > r.height) {
+        h = Math.max(0, r.height);
+        w = (h * 16) / 9;
+      }
+      w = Math.floor(w);
+      h = Math.floor(h);
+      setStageBox((prev) =>
+        prev !== null && Math.abs(prev.w - w) < 1 && Math.abs(prev.h - h) < 1
+          ? prev
+          : { w, h },
+      );
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(stageWrapEl);
+    return () => ro.disconnect();
+  }, [stageWrapEl]);
 
   // An undo snapshot belongs to one sermon — discard it on switch so undo
   // can never restore another sermon's deck over the current one.
@@ -199,12 +273,29 @@ export function DeckStudio() {
     };
   }, [pickerOpen]);
 
-  const preset = getBackgroundPreset(backgroundPresetId);
+  const preset = getBackgroundPreset(
+    selectedCustom?.backgroundPresetId ?? backgroundPresetId,
+  );
   const canvasStyle = {
     background: preset.background,
     "--stage-text": preset.textColor,
     "--stage-dim": preset.referenceColor,
   } as CSSProperties;
+
+  // Preview type scale: the frame is a fraction of a 1080p stage, so the
+  // viewport-locked stage tokens are overridden per-subtree with scaled
+  // 1080p equivalents (see presentation/stageScale.ts). Fixed type and
+  // the auto-fit ceiling/floor then shrink with the frame. Unmeasured
+  // (first frame) falls back to the raw tokens rather than zeroes.
+  const previewVars =
+    stageBox === null
+      ? undefined
+      : ({
+          "--stage-text-size": `${STAGE_1080P_PX.text * previewScaleForWidth(stageBox.w)}px`,
+          "--stage-text-min-size": `${STAGE_1080P_PX.floor * previewScaleForWidth(stageBox.w)}px`,
+          "--stage-ref-size": `${STAGE_1080P_PX.ref * previewScaleForWidth(stageBox.w)}px`,
+          "--stage-padding": `${STAGE_1080P_PX.padding * previewScaleForWidth(stageBox.w)}px`,
+        }) as CSSProperties | undefined;
 
   const onPresent = useCallback(() => {
     if (deck.length === 0) return;
@@ -272,6 +363,118 @@ export function DeckStudio() {
     clearDeck();
     setSelectedKey(null);
   }, [deck.length, clearDeck, stash]);
+
+  // Freeform editing flows. Adding to a legacy slide converts it
+  // first (one undo snapshot covers the whole sequence); verse slides
+  // never accept blocks — scripture stays verbatim.
+  const ensureFreeformTarget = useCallback((): string | null => {
+    if (selectedCustom === null) return null;
+    const key = deckKey(selectedCustom);
+    if (renderMode(selectedCustom) === "blocks") return key;
+    stash("Converted to freeform");
+    if (!convertToFreeform(key)) {
+      setUndo(null);
+      return null;
+    }
+    return key;
+  }, [selectedCustom, convertToFreeform, stash]);
+
+  const onAddText = useCallback(() => {
+    const key = ensureFreeformTarget();
+    if (key === null) return;
+    const block = {
+      type: "text" as const,
+      id: newBlockId(),
+      x: 10,
+      y: 38,
+      w: 80,
+      align: "center" as const,
+      font: "serif",
+      sizePct: 3,
+      text: "Double-click to edit",
+    };
+    stash("Added text box");
+    if (addBlock(key, block)) {
+      setSelectedBlockId(block.id);
+      showToast("Added text box");
+    } else {
+      setUndo(null);
+    }
+  }, [ensureFreeformTarget, addBlock, showToast, stash]);
+
+  const addImageBlock = useCallback(
+    (src: string) => {
+      const key = ensureFreeformTarget();
+      if (key === null) return;
+      const block = {
+        type: "image" as const,
+        id: newBlockId(),
+        x: 20,
+        y: 20,
+        w: 60,
+        src,
+        alt: "Imported image",
+      };
+      stash("Added image");
+      if (addBlock(key, block)) {
+        setSelectedBlockId(block.id);
+        showToast("Added image — set its alt text in the panel");
+      } else {
+        setUndo(null);
+      }
+    },
+    [ensureFreeformTarget, addBlock, showToast, stash],
+  );
+
+  const importImageFile = useCallback(
+    async (file: File) => {
+      const image = await fileToSlideImage(file);
+      if (image === null) {
+        showToast("Couldn't read that image file");
+        return;
+      }
+      const deck = useActiveSermon.getState().sermon.deck;
+      if (!fitsImageBudget(deck, image.src.length)) {
+        showToast("Image too large for offline storage");
+        return;
+      }
+      addImageBlock(image.src);
+    },
+    [addImageBlock, showToast],
+  );
+
+  const onCanvasPaste = useCallback(
+    async (e: React.ClipboardEvent) => {
+      const image = await clipboardToSlideImage(
+        e.nativeEvent as unknown as ClipboardEvent,
+      );
+      if (image === null) return;
+      e.preventDefault();
+      const deck = useActiveSermon.getState().sermon.deck;
+      if (!fitsImageBudget(deck, image.src.length)) {
+        showToast("Image too large for offline storage");
+        return;
+      }
+      if (selectedCustom === null) {
+        showToast("Select a custom slide to paste into");
+        return;
+      }
+      addImageBlock(image.src);
+    },
+    [addImageBlock, selectedCustom, showToast],
+  );
+
+  const onConvertSelected = useCallback(() => {
+    if (selectedCustom === null) return;
+    const key = deckKey(selectedCustom);
+    stash("Converted to freeform");
+    if (convertToFreeform(key)) {
+      showToast("Converted to freeform blocks");
+    } else {
+      setUndo(null);
+      showToast("Nothing to convert");
+    }
+  }, [selectedCustom, convertToFreeform, showToast, stash]);
 
   const commitDraft = useCallback(
     (title: string | undefined, body: string) => {
@@ -706,6 +909,7 @@ export function DeckStudio() {
           <section
             className="deck-studio-canvas-wrap"
             aria-label="Slide preview"
+            onPaste={onCanvasPaste}
           >
             <div className="deck-studio-canvas-nav">
               <button
@@ -738,19 +942,97 @@ export function DeckStudio() {
                 <ChevronRightIcon />
               </button>
             </div>
+            {selectedCustom !== null && (
+              <div
+                className="deck-studio-canvas-toolbar"
+                role="toolbar"
+                aria-label="Slide editing"
+              >
+                <button
+                  type="button"
+                  className="sermon-deck-secondary"
+                  onClick={onAddText}
+                >
+                  + Text
+                </button>
+                <button
+                  type="button"
+                  className="sermon-deck-secondary"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  + Image
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  aria-label="Import image file"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    if (file) void importImageFile(file);
+                  }}
+                />
+              </div>
+            )}
             {selected?.type === "custom" || selected?.type === "verse" ? (
-              <div className="deck-studio-canvas" style={canvasStyle}>
-                {selected?.type === "custom" ? (
-                  <CustomSlideView slide={selected} />
-                ) : (
-                  <SlideView
-                    slide={selected?.type === "verse" ? selected : null}
-                  />
-                )}
+              <div className="deck-studio-stage-fit" ref={setStageWrapEl}>
+                <div
+                  className="deck-studio-canvas"
+                  style={{
+                    ...canvasStyle,
+                    ...previewVars,
+                    ...(stageBox
+                      ? { width: stageBox.w, height: stageBox.h }
+                      : undefined),
+                  }}
+                >
+                  {selectedCustom !== null && isFreeform ? (
+                    <BlockSlideView
+                      slide={{
+                        id: selectedCustom.id,
+                        blocks: selectedCustom.blocks ?? [],
+                      }}
+                    />
+                  ) : selected?.type === "custom" ? (
+                    <CustomSlideView slide={selected} />
+                  ) : (
+                    <SlideView
+                      slide={selected?.type === "verse" ? selected : null}
+                    />
+                  )}
+                  {isFreeform && selectedCustom !== null && (
+                    <BlockEditorCanvas
+                      slideKey={deckKey(selectedCustom)}
+                      blocks={selectedCustom.blocks ?? []}
+                      selectedId={selectedBlockId}
+                      onSelect={setSelectedBlockId}
+                      snapshot={stash}
+                      onOverflow={(ids) =>
+                        setOverflowIds((prev) =>
+                          prev.length === ids.length &&
+                          prev.every((v, i) => v === ids[i])
+                            ? prev
+                            : ids,
+                        )
+                      }
+                    />
+                  )}
+                </div>
               </div>
             ) : (
-              <div className="deck-studio-canvas deck-studio-canvas-draft">
-                <p>Your new slide preview appears here after you add it.</p>
+              <div className="deck-studio-stage-fit" ref={setStageWrapEl}>
+                <div
+                  className="deck-studio-canvas deck-studio-canvas-draft"
+                  style={
+                    stageBox
+                      ? { width: stageBox.w, height: stageBox.h }
+                      : undefined
+                  }
+                >
+                  <p>Your new slide preview appears here after you add it.</p>
+                </div>
               </div>
             )}
           </section>
@@ -763,14 +1045,48 @@ export function DeckStudio() {
               />
             ) : selected === null ? (
               <p>Select a slide.</p>
-            ) : (
+            ) : selected.type === "verse" ? (
               <InspectorForm
                 key={deckKey(selected)}
                 item={selected}
                 onDuplicate={duplicateSelected}
                 onRemove={removeSelected}
               />
-            )}
+            ) : isFreeform && selectedCustom !== null ? (
+              <FreeformInspector
+                key={deckKey(selectedCustom)}
+                slideKey={deckKey(selectedCustom)}
+                item={selectedCustom}
+                selectedBlockId={selectedBlockId}
+                onSelectBlock={setSelectedBlockId}
+                overflowIds={overflowIds}
+                onAddText={onAddText}
+                onPickImage={() => fileInputRef.current?.click()}
+                snapshot={stash}
+              />
+            ) : selectedCustom !== null ? (
+              <>
+                <InspectorForm
+                  key={deckKey(selectedCustom)}
+                  item={selectedCustom}
+                  onDuplicate={duplicateSelected}
+                  onRemove={removeSelected}
+                />
+                <div className="deck-studio-convert">
+                  <button
+                    type="button"
+                    className="sermon-deck-secondary"
+                    onClick={onConvertSelected}
+                  >
+                    Convert to freeform
+                  </button>
+                  <p className="custom-slide-hint">
+                    Unlock text boxes, images, fonts, and layouts. Undoable;
+                    verse slides stay as they are.
+                  </p>
+                </div>
+              </>
+            ) : null}
           </aside>
         </div>
       )}
