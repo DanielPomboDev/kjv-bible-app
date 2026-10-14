@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDeck } from "../store/deck";
 import { useToast } from "../store/toast";
+import { exportDeckPptx, tryAppendVersesLive } from "../export/pptx";
 import type { ChapterVerse, SermonDeckEntry } from "../domain/types";
 import { useFocusTrap } from "./focus";
 
@@ -29,6 +30,7 @@ export function VerseContextMenu({
   const addToDeck = useDeck((s) => s.addToDeck);
   const showToast = useToast((s) => s.showToast);
   const [pos, setPos] = useState({ x, y });
+  const [sending, setSending] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const firstItemRef = useRef<HTMLButtonElement>(null);
   const lastVerseId = useRef<number | null>(null);
@@ -53,7 +55,7 @@ export function VerseContextMenu({
   useEffect(() => {
     if (!verse) return;
     const MENU_W = 200;
-    const MENU_H = 96;
+    const MENU_H = 140;
     const next = { x, y };
     if (x + MENU_W > window.innerWidth) next.x = window.innerWidth - MENU_W - 4;
     if (y + MENU_H > window.innerHeight) next.y = window.innerHeight - MENU_H - 4;
@@ -113,6 +115,49 @@ export function VerseContextMenu({
     onClose();
   }, [verse, addToDeck, toEntry, showToast, onClose]);
 
+  // Append-at-end update: queue the verse last in the deck, then add it
+  // to the running show if ours is presenting (show restarts at the same
+  // slide), else re-render the whole deck over the same temp file.
+  // Live-append only runs for genuinely new slides — a duplicate would
+  // diverge the open deck from the app deck.
+  const onAddAndUpdate = useCallback(async () => {
+    if (!verse || sending) return;
+    setSending(true);
+    try {
+      const ref = `${verse.bookName} ${verse.chapter}:${verse.verse}`;
+      const added = addToDeck(toEntry(verse));
+      const { deck, backgroundPresetId } = useDeck.getState();
+      const live =
+        added === true
+          ? await tryAppendVersesLive(
+              [{ label: ref, text: verse.text }],
+              backgroundPresetId,
+            )
+          : null;
+      if (live) {
+        showToast(
+          `Added ${ref} — show continues at slide ${live.resumedAt} (${live.total} total)`,
+        );
+      } else {
+        await exportDeckPptx({
+          title: "Sermon Deck",
+          deck: [...deck],
+          backgroundPresetId,
+        });
+        showToast(
+          added
+            ? `Added ${ref} — updated in PowerPoint (${deck.length} slides)`
+            : `${ref} is already in the deck — reopened in PowerPoint (${deck.length} slides)`,
+        );
+      }
+    } catch (e) {
+      showToast(`PowerPoint update failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setSending(false);
+      onClose();
+    }
+  }, [verse, sending, addToDeck, toEntry, showToast, onClose]);
+
   if (!verse) return null;
 
   return (
@@ -131,6 +176,15 @@ export function VerseContextMenu({
         onClick={onAddToDeck}
       >
         Add to Sermon Deck
+      </button>
+      <button
+        type="button"
+        className="verse-context-menu-item"
+        role="menuitem"
+        disabled={sending}
+        onClick={onAddAndUpdate}
+      >
+        {sending ? "Updating…" : "Add & Update PowerPoint"}
       </button>
     </div>
   );

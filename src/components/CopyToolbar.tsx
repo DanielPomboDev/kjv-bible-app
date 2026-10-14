@@ -4,7 +4,18 @@ import { copyText, formatVerses } from "../services/clipboard";
 import { useSelection } from "../store/selection";
 import { useDeck } from "../store/deck";
 import { useToast } from "../store/toast";
+import { exportDeckPptx, tryAppendVersesLive } from "../export/pptx";
 import type { ChapterVerse, SermonDeckItem } from "../domain/types";
+
+/** One selected verse → one deck slide appended at the end. */
+function toSlide(v: ChapterVerse): SermonDeckItem {
+  return {
+    type: "verse",
+    id: v.id,
+    label: `${v.bookName} ${v.chapter}:${v.verse}`,
+    text: v.text,
+  };
+}
 
 /**
  * Floating pill that appears above the bottom center of the window only
@@ -26,12 +37,6 @@ export function CopyToolbar() {
     setBusy(true);
     try {
       const verses = await getVersesByIds(ids);
-      const toSlide = (v: ChapterVerse): SermonDeckItem => ({
-        type: "verse",
-        id: v.id,
-        label: `${v.bookName} ${v.chapter}:${v.verse}`,
-        text: v.text,
-      });
       const { added, skipped } =
         useDeck.getState().addManyToDeck(verses.map(toSlide));
       if (added === 0) {
@@ -73,6 +78,52 @@ export function CopyToolbar() {
     }
   }, [showToast]);
 
+  // Append-at-end update: queue the selection last in the deck, then add
+  // the fresh ones to the running show if ours is presenting, else
+  // re-render the whole deck over the same temp file.
+  const addSelectedAndUpdate = useCallback(async () => {
+    const ids = [...useSelection.getState().selectedIds];
+    if (ids.length === 0) return;
+    setBusy(true);
+    try {
+      const verses = await getVersesByIds(ids);
+      const before = new Set(useDeck.getState().deck.map((e) => e.id));
+      const { added } = useDeck.getState().addManyToDeck(verses.map(toSlide));
+      const { deck, backgroundPresetId } = useDeck.getState();
+      const fresh = verses.filter((v) => !before.has(v.id));
+      const live =
+        fresh.length > 0
+          ? await tryAppendVersesLive(
+              fresh.map((v) => ({
+                label: `${v.bookName} ${v.chapter}:${v.verse}`,
+                text: v.text,
+              })),
+              backgroundPresetId,
+            )
+          : null;
+      if (live) {
+        showToast(
+          `Added ${live.added} verse${live.added === 1 ? "" : "s"} — show continues at slide ${live.resumedAt} (${live.total} total)`,
+        );
+      } else {
+        await exportDeckPptx({
+          title: "Sermon Deck",
+          deck: [...deck],
+          backgroundPresetId,
+        });
+        showToast(
+          added > 0
+            ? `Added ${added} verse${added === 1 ? "" : "s"} — updated in PowerPoint (${deck.length} slides)`
+            : `Already in the deck — reopened in PowerPoint (${deck.length} slides)`,
+        );
+      }
+    } catch (e) {
+      showToast(`PowerPoint update failed: ${String(e)}`);
+    } finally {
+      setBusy(false);
+    }
+  }, [showToast]);
+
   if (count === 0) return null;
 
   return (
@@ -97,6 +148,15 @@ export function CopyToolbar() {
           disabled={busy}
         >
           Add to Deck
+        </button>
+        <button
+          type="button"
+          className="copy-toolbar-button copy-toolbar-button-ghost"
+          onClick={addSelectedAndUpdate}
+          disabled={busy}
+          title="Add the selection to the deck and reopen it in PowerPoint"
+        >
+          Add + Update PPT
         </button>
         <button
           type="button"

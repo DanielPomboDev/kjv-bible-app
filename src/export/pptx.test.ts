@@ -5,9 +5,11 @@ import {
 import {
   exportToast,
   generateDeckPptx,
+  hexToOle,
   pctToInX,
   planDeck,
   planItems,
+  planLiveVerse,
   planSlide,
   pptxBackgroundFor,
   pptxFileName,
@@ -178,6 +180,24 @@ describe("pptx export mapping", () => {
     const plans = planItems(sermon.deck.slice(2), sermon.backgroundPresetId);
     expect(plans).toHaveLength(1);
     expect(plans[0].texts[0].runs[0].text).toBe("Grace");
+  });
+
+  test("live verse maps colors to OLE BGR and keeps size ceiling", () => {
+    expect(hexToOle("000000")).toBe(0);
+    expect(hexToOle("FFFFFF")).toBe(0xffffff);
+    // #14264A → OLE 0x4A2614 (bytes reversed).
+    expect(hexToOle("14264A")).toBe(0x4a2614);
+    const live = planLiveVerse(
+      { label: "John 3:16", text: "For God…" },
+      "deep-navy",
+    );
+    expect(live).toMatchObject({
+      label: "John 3:16",
+      text: "For God…",
+      fillOle: 0x4a2614,
+    });
+    // No canvas in node: size stays at the ceiling, like planSlide.
+    expect(live.bodyPt).toBe(89);
   });
 
   test("empty deck refuses to generate", async () => {

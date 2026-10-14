@@ -11,10 +11,18 @@ import { canvasMeasure, fitTextToBox } from "./textFit";
  * over pptxgenjs (MIT, offline-safe, lazily imported so startup stays
  * fast). Zero backend changes: export only reads the open sermon.
  * Canonical 16:9 LAYOUT_WIDE matches the studio letterbox.
+ *
+ * Delivery is transient: the backend stages one temp file (overwritten
+ * every export) and opens it — nothing lands in Downloads, nothing to
+ * delete after presenting. "Append" is re-export: the deck store appends
+ * at the end and `planDeck` preserves order, so adding verses then
+ * exporting again yields the same deck with new last slides.
  */
 
 export const PPTX_W_IN = 13.33;
 export const PPTX_H_IN = 7.5;
+/** Fixed temp-file name for the transient PowerPoint handoff. */
+export const TRANSIENT_PPTX_NAME = "kjv-sermon-deck.pptx";
 export const PPTX_MIME =
   "application/vnd.openxmlformats-officedocument.presentationml.presentation";
 
@@ -347,6 +355,77 @@ export interface ExportResult {
   opened: boolean;
 }
 
+/** One verse pre-formatted for a live append into a running show. */
+export interface LiveVerse {
+  label: string;
+  text: string;
+  bodyPt: number;
+  fillOle: number;
+  textOle: number;
+  refOle: number;
+}
+
+export interface LiveAppendInfo {
+  added: number;
+  total: number;
+  resumedAt: number;
+}
+
+/** `#RRGGBB` → OLE BGR integer PowerPoint expects for `Color.RGB`. */
+export function hexToOle(hexColor: string): number {
+  const h = hexColor.replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return (b << 16) | (g << 8) | r;
+}
+
+/**
+ * Verse look + fitted size for a live append (mirrors `planSlide`
+ * geometry: centered Georgia body, pinned Calibri reference).
+ */
+export function planLiveVerse(
+  verse: { label: string; text: string },
+  sermonBg: string,
+): LiveVerse {
+  const preset = getBackgroundPreset(sermonBg);
+  const measure = canvasMeasure();
+  const bodyPt =
+    measure === null
+      ? VERSE_BODY_PT
+      : fitTextToBox({
+          text: verse.text,
+          boxWPx: 11.73 * 96,
+          boxHPx: 5.5 * 96,
+          fontFamily: "Georgia, serif",
+          startPt: VERSE_BODY_PT,
+          measure,
+        });
+  return {
+    label: verse.label,
+    text: verse.text,
+    bodyPt,
+    fillOle: hexToOle(pptxBackgroundFor(preset.id)),
+    textOle: hexToOle(preset.textColor),
+    refOle: hexToOle(preset.referenceColor),
+  };
+}
+
+/**
+ * Live append into the running slideshow of our staged deck. Returns the
+ * resume position, or null when no such show is running (caller uses the
+ * file flow) or outside Tauri. Throws when the live append itself fails.
+ */
+export async function tryAppendVersesLive(
+  verses: { label: string; text: string }[],
+  sermonBg: string,
+): Promise<LiveAppendInfo | null> {
+  if (verses.length === 0 || !isTauriApp()) return null;
+  const { invoke } = await import("@tauri-apps/api/core");
+  return (await invoke<LiveAppendInfo | null>("append_verses_live", {
+    additions: verses.map((v) => planLiveVerse(v, sermonBg)),
+  })) as LiveAppendInfo | null;
+}
 /** True inside the Tauri WebView (backend commands + opener exist). */
 function isTauriApp(): boolean {
   return (
@@ -363,9 +442,9 @@ export async function exportDeckPptx(source: DeckExport): Promise<ExportResult> 
 }
 
 /**
- * Render + deliver one file: save to Downloads via the backend and open
- * with the default app (anchor download outside Tauri). Failures throw
- * with the reason so toasts stay honest.
+ * Render + deliver one file: stage a transient temp file via the backend
+ * and open it with the default app (anchor download outside Tauri).
+ * Failures throw with the reason so toasts stay honest.
  */
 async function renderAndDeliver(
   fileName: string,
@@ -388,20 +467,21 @@ async function renderAndDeliver(
   }
   const { invoke } = await import("@tauri-apps/api/core");
   const base64Data = await blobToBase64(blob);
-  const path = (await invoke<string>("save_export", {
-    fileName,
+  // Transient handoff: one temp file, overwritten every export — nothing
+  // in Downloads, nothing to delete after presenting.
+  const path = (await invoke<string>("save_transient_export", {
     base64Data,
   })) as string;
   try {
     const { openPath } = await import("@tauri-apps/plugin-opener");
     await openPath(path);
   } catch (e) {
-    // Saved but the OS wouldn't open it (no handler? denied?) — say
+    // Staged but the OS wouldn't open it (no handler? denied?) — say
     // so, with the path, instead of failing silently.
     const reason = e instanceof Error ? e.message : String(e);
-    throw new Error(`saved to ${path}, but auto-open failed: ${reason}`);
+    throw new Error(`staged to ${path}, but auto-open failed: ${reason}`);
   }
-  return { fileName, path, opened: true };
+  return { fileName: TRANSIENT_PPTX_NAME, path, opened: true };
 }
 
 /**
@@ -441,7 +521,9 @@ export async function generateDeckPptx(source: DeckExport): Promise<Blob> {
       );
     }
   }
-  for (const slide of plans) {
+  // Render one slide plan (shared by deck slides and the hidden live
+  // template below, so both match exactly).
+  const renderPlan = (slide: PptxSlidePlan) => {
     const pptSlide = pptx.addSlide();
     // Rendered artwork goes on as a full-bleed image shape behind the
     // content (slide `background.data` is documented but silently
@@ -499,7 +581,21 @@ export async function generateDeckPptx(source: DeckExport): Promise<Blob> {
     if (slide.notes !== undefined) {
       pptSlide.addNotes(slide.notes);
     }
+    return pptSlide;
+  };
+  for (const slide of plans) {
+    renderPlan(slide);
   }
+  // Hidden verse-styled template (never shown: `show="0"`): mid-show
+  // live appends duplicate it, so new slides reuse the deck's exact
+  // background art, geometry, and fonts.
+  renderPlan(
+    planSlide(
+      { type: "verse", id: 0, label: " ", text: " " },
+      source.backgroundPresetId,
+      fit,
+    ),
+  ).hidden = true;
   const buffer = (await pptx.write({
     outputType: "arraybuffer",
   })) as ArrayBuffer;

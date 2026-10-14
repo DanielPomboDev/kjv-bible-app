@@ -576,10 +576,10 @@ export function DeckStudio() {
                 type="button"
                 className="sermon-deck-present"
                 disabled={exporting}
-                title="Download the deck as .pptx — continue editing in PowerPoint (one-way)"
+                title="Open the deck in PowerPoint via a temp file — nothing saved, nothing to delete after (one-way)"
                 onClick={onExportPptx}
               >
-                {exporting ? "Exporting…" : "Export .pptx"}
+                {exporting ? "Opening…" : "Open in PowerPoint"}
               </button>
               <button
                 type="button"

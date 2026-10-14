@@ -12,7 +12,7 @@
     "opener:default",
     {
       "identifier": "opener:allow-open-path",
-      "allow": [{ "path": "$DOWNLOAD/*" }]
+      "allow": [{ "path": "$DOWNLOAD/*" }, { "path": "$TEMP/kjv-bible/*" }]
     }
   ]
 }

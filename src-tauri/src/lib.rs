@@ -16,6 +16,8 @@ pub fn run() {
             db::get_verses_by_ids,
             search::search_bible,
             export::save_export,
+            export::save_transient_export,
+            export::append_verses_live,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
